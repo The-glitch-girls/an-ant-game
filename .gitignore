@@ -1,0 +1,12 @@
+# Godot 4
+.godot/
+*.translation
+export_credentials.cfg
+export_credentials.encryption_key
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Scratch editor junk
+*.tmp
