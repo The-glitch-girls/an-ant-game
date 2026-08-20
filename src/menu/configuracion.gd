@@ -1,12 +1,9 @@
 extends Control
 
-const TIERRA := Color(0.12, 0.07, 0.05)
-const HUESO := Color(0.86, 0.78, 0.68)
-
 
 func _ready() -> void:
 	var fondo := ColorRect.new()
-	fondo.color = TIERRA
+	fondo.color = Paleta.TIERRA_OSCURA
 	fondo.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(fondo)
 
@@ -22,13 +19,13 @@ func _ready() -> void:
 	var titulo := Label.new()
 	titulo.text = "Configuración"
 	titulo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	titulo.add_theme_color_override("font_color", HUESO)
+	titulo.add_theme_color_override("font_color", Paleta.HUESO)
 	titulo.add_theme_font_size_override("font_size", 36)
 	caja.add_child(titulo)
 
 	var vol_label := Label.new()
 	vol_label.text = "Volumen"
-	vol_label.add_theme_color_override("font_color", HUESO)
+	vol_label.add_theme_color_override("font_color", Paleta.HUESO)
 	caja.add_child(vol_label)
 
 	var slider := HSlider.new()

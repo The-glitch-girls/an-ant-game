@@ -37,3 +37,8 @@ func _dibujar() -> void:
 func _process(_delta: float) -> void:
 	if not tomada and not depositada:
 		position.y += sin(Time.get_ticks_msec() * 0.004 + position.x) * 0.02
+
+
+func liberar() -> void:
+	if not depositada:
+		tomada = false
