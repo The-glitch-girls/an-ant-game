@@ -26,6 +26,7 @@ func _ready() -> void:
 	_mapa.generar()
 	_pintar_cielo()
 	_construir_tiles()
+	_polvo_derrumbada()
 	_etiquetar_camaras()
 	_construir_zonas()
 	_construir_hormiga()
@@ -53,10 +54,10 @@ func _construir_tiles() -> void:
 	for y in HormigueroMapa.ALTO:
 		for x in HormigueroMapa.ANCHO:
 			var c := _mapa.get_celda(x, y)
-			if c == HormigueroMapa.CIELO:
-				continue
 			var atlas := Vector2i(0, 0)
-			if c == HormigueroMapa.TUNEL:
+			if c == HormigueroMapa.CIELO:
+				atlas = Vector2i(3, 0)
+			elif c == HormigueroMapa.TUNEL:
 				atlas = Vector2i(1, 0)
 			elif c == HormigueroMapa.DERRUMBADA:
 				atlas = Vector2i(2, 0)
@@ -69,22 +70,24 @@ func _hacer_tileset() -> TileSet:
 	ts.add_physics_layer()
 	ts.set_physics_layer_collision_layer(0, 1)
 	ts.set_physics_layer_collision_mask(0, 0)
-	var img := Image.create(HormigueroMapa.TILE * 3, HormigueroMapa.TILE, false, Image.FORMAT_RGBA8)
+	var img := Image.create(HormigueroMapa.TILE * 4, HormigueroMapa.TILE, false, Image.FORMAT_RGBA8)
 	_rellenar_tierra(img, Rect2i(0, 0, HormigueroMapa.TILE, HormigueroMapa.TILE), Paleta.TIERRA, Paleta.TIERRA_MANCHA)
 	_rellenar_tierra(img, Rect2i(HormigueroMapa.TILE, 0, HormigueroMapa.TILE, HormigueroMapa.TILE), Paleta.TUNEL, Paleta.TUNEL_OSCURO)
 	_rellenar_tierra(img, Rect2i(HormigueroMapa.TILE * 2, 0, HormigueroMapa.TILE, HormigueroMapa.TILE), Paleta.TIERRA_OSCURA, Paleta.TIERRA_MANCHA)
+	img.fill_rect(Rect2i(HormigueroMapa.TILE * 3, 0, HormigueroMapa.TILE, HormigueroMapa.TILE), Color(0, 0, 0, 0))
 	var source := TileSetAtlasSource.new()
 	source.texture = ImageTexture.create_from_image(img)
 	source.texture_region_size = Vector2i(HormigueroMapa.TILE, HormigueroMapa.TILE)
 	source.create_tile(Vector2i(0, 0))
 	source.create_tile(Vector2i(1, 0))
 	source.create_tile(Vector2i(2, 0))
+	source.create_tile(Vector2i(3, 0))
 	ts.add_source(source)
 	var half := HormigueroMapa.TILE * 0.5
 	var box := PackedVector2Array([
 		Vector2(-half, -half), Vector2(half, -half), Vector2(half, half), Vector2(-half, half)
 	])
-	for coords in [Vector2i(0, 0), Vector2i(2, 0)]:
+	for coords in [Vector2i(0, 0), Vector2i(2, 0), Vector2i(3, 0)]:
 		var td: TileData = source.get_tile_data(coords, 0)
 		td.add_collision_polygon(0)
 		td.set_collision_polygon_points(0, 0, box)
@@ -100,6 +103,35 @@ func _rellenar_tierra(img: Image, rect: Rect2i, base: Color, mancha: Color) -> v
 			if (x + y * 3) % 17 == 0:
 				c = c.darkened(0.08)
 			img.set_pixel(rect.position.x + x, rect.position.y + y, c)
+
+
+func _polvo_derrumbada() -> void:
+	var polvo := GPUParticles2D.new()
+	polvo.position = _mapa.derrumbada.get_center()
+	polvo.amount = 16
+	polvo.lifetime = 2.2
+	polvo.texture = _pixel()
+	var mat := ParticleProcessMaterial.new()
+	mat.gravity = Vector3(0, 18, 0)
+	mat.scale_min = 1.2
+	mat.scale_max = 2.8
+	mat.color = Paleta.TIERRA_MANCHA
+	polvo.process_material = mat
+	add_child(polvo)
+	var zona := Area2D.new()
+	zona.position = polvo.position
+	zona.collision_layer = 0
+	zona.collision_mask = 2
+	zona.monitoring = true
+	var col := CollisionShape2D.new()
+	var shape := RectangleShape2D.new()
+	shape.size = _mapa.derrumbada.size
+	col.shape = shape
+	zona.add_child(col)
+	zona.body_entered.connect(func(_b: Node) -> void:
+		_sfx.tocar("soltar")
+	)
+	add_child(zona)
 
 
 func _etiquetar_camaras() -> void:

@@ -132,10 +132,11 @@ func _physics_process(delta: float) -> void:
 		_paso += delta * 14.0
 		_gasto_acum += delta
 		var ritmo := 0.34 if quiere_correr else 0.52
-		if en_curso and gasta_energia and _gasto_acum >= ritmo:
+		if en_curso and _gasto_acum >= ritmo:
 			_gasto_acum = 0.0
 			intento_mover.emit()
-			Juego.partida.correr()
+			if gasta_energia:
+				Juego.partida.correr()
 	for i in _patas.size():
 		_patas[i].rotation = sin(_paso + i) * 0.25 if dir.length() > 0.15 else 0.0
 

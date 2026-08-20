@@ -50,7 +50,8 @@ func es_caminable(x: int, y: int) -> bool:
 
 
 func esta_afuera(pos: Vector2) -> bool:
-	return pos.y <= superficie_y + TILE * 1.5
+	var ty: int = int(pos.y / TILE)
+	return ty <= 11
 
 
 func _poner(x: int, y: int, v: int) -> void:
