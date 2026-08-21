@@ -1,28 +1,30 @@
 class_name HormigaVista
 extends CharacterBody2D
 
-const GRAVEDAD := 980.0
-const VEL_CAMINAR := 92.0
-const VEL_CORRER := 148.0
-const VEL_CARGAR := 52.0
-const VEL_ARRASTRE := 28.0
-const SALTO := 290.0
+const VEL_CAMINAR := 88.0
+const VEL_CORRER := 140.0
+const VEL_CARGAR := 48.0
+const VEL_ARRASTRE := 26.0
 
-signal intento_saltar
-signal intento_correr
+signal intento_mover
 signal cerca_de_comida(pieza: Node2D)
 
+var gasta_energia: bool = false
 var _gasto_acum: float = 0.0
 var _mandibulas: Node2D
 var _cuerpo: Node2D
+var _patas: Array[Node2D] = []
 var _comida_vista: Node2D
+var _sensor: Area2D
+var _paso: float = 0.0
 
 
 func _ready() -> void:
 	collision_layer = 2
 	collision_mask = 1
+	motion_mode = MOTION_MODE_FLOATING
 	_dibujar()
-	_sensor()
+	_armar_sensor()
 
 
 func _dibujar() -> void:
@@ -30,29 +32,38 @@ func _dibujar() -> void:
 	_cuerpo.name = "Cuerpo"
 	add_child(_cuerpo)
 
-	var abdomen := _ovalo(Vector2(-10, 1), Vector2(16, 11), Color(0.12, 0.07, 0.04))
-	var torax := _ovalo(Vector2(2, 0), Vector2(12, 9), Color(0.16, 0.09, 0.05))
-	var cabeza := _ovalo(Vector2(13, -1), Vector2(10, 8), Color(0.1, 0.05, 0.03))
-	_cuerpo.add_child(abdomen)
-	_cuerpo.add_child(torax)
-	_cuerpo.add_child(cabeza)
+	for i in 3:
+		var pata_par := Node2D.new()
+		_cuerpo.add_child(pata_par)
+		_patas.append(pata_par)
+		var y := -9 if i != 1 else 9
+		pata_par.add_child(_segmento(Vector2(-8 + i * 7, y), Vector2(11, 2.2), Paleta.HORMIGA_OSCURA, 0.7 if y < 0 else -0.7))
+		pata_par.add_child(_segmento(Vector2(-8 + i * 7, y), Vector2(8, 1.8), Paleta.OJO, 1.15 if y < 0 else -1.15))
+
+	_cuerpo.add_child(_ovalo(Vector2(-11, 0), Vector2(16, 12), Paleta.HORMIGA_OSCURA))
+	_cuerpo.add_child(_ovalo(Vector2(1, 0), Vector2(13, 10), Paleta.HORMIGA))
+	_cuerpo.add_child(_ovalo(Vector2(13, -1), Vector2(11, 9), Paleta.HORMIGA_PANZA))
+	_cuerpo.add_child(_ovalo(Vector2(16, -3), Vector2(3, 3), Paleta.OJO))
+
+	var ant1 := _segmento(Vector2(18, -5), Vector2(9, 1.4), Paleta.OJO, -0.8)
+	var ant2 := _segmento(Vector2(18, 2), Vector2(8, 1.4), Paleta.OJO, 0.35)
+	_cuerpo.add_child(ant1)
+	_cuerpo.add_child(ant2)
 
 	_mandibulas = Node2D.new()
 	_mandibulas.position = Vector2(18, 1)
 	_cuerpo.add_child(_mandibulas)
-	var m1 := _ovalo(Vector2(4, -3), Vector2(6, 2), Color(0.08, 0.04, 0.02))
-	var m2 := _ovalo(Vector2(4, 3), Vector2(6, 2), Color(0.08, 0.04, 0.02))
-	m1.rotation = -0.25
-	m2.rotation = 0.25
+	var m1 := _ovalo(Vector2(5, -3), Vector2(7, 2.4), Paleta.HORMIGA_OSCURA)
+	var m2 := _ovalo(Vector2(5, 3), Vector2(7, 2.4), Paleta.HORMIGA_OSCURA)
+	m1.rotation = -0.3
+	m2.rotation = 0.3
 	_mandibulas.add_child(m1)
 	_mandibulas.add_child(m2)
 
 	var col := CollisionShape2D.new()
-	var shape := CapsuleShape2D.new()
-	shape.radius = 7
-	shape.height = 28
+	var shape := CircleShape2D.new()
+	shape.radius = 9
 	col.shape = shape
-	col.rotation = PI / 2
 	add_child(col)
 
 
@@ -68,18 +79,24 @@ func _ovalo(pos: Vector2, tam: Vector2, color: Color) -> Polygon2D:
 	return p
 
 
-func _sensor() -> void:
-	var area := Area2D.new()
-	area.collision_layer = 0
-	area.collision_mask = 4 | 8
-	area.name = "Sensor"
+func _segmento(pos: Vector2, tam: Vector2, color: Color, rot: float) -> Polygon2D:
+	var p := _ovalo(pos, tam, color)
+	p.rotation = rot
+	return p
+
+
+func _armar_sensor() -> void:
+	_sensor = Area2D.new()
+	_sensor.collision_layer = 0
+	_sensor.collision_mask = 4 | 8
+	_sensor.name = "Sensor"
 	var col := CollisionShape2D.new()
 	var shape := CircleShape2D.new()
 	shape.radius = 16
 	col.shape = shape
-	area.add_child(col)
-	add_child(area)
-	area.area_entered.connect(_on_area)
+	_sensor.add_child(col)
+	add_child(_sensor)
+	_sensor.area_entered.connect(_on_area)
 
 
 func _on_area(area: Area2D) -> void:
@@ -88,56 +105,58 @@ func _on_area(area: Area2D) -> void:
 
 
 func _physics_process(delta: float) -> void:
-	if not Juego.partida or Juego.partida.resultado != Partida.Resultado.EN_CURSO:
-		velocity.x = 0
-		velocity.y += GRAVEDAD * delta
-		move_and_slide()
-		return
+	var en_curso := Juego.partida != null and Juego.partida.resultado == Partida.Resultado.EN_CURSO
+	var dir := Vector2(
+		Input.get_axis("mover_izquierda", "mover_derecha"),
+		Input.get_axis("mover_arriba", "mover_abajo")
+	)
+	if dir.length() > 1.0:
+		dir = dir.normalized()
 
-	if not is_on_floor():
-		velocity.y += GRAVEDAD * delta
-
-	var dir := Input.get_axis("mover_izquierda", "mover_derecha")
-	var quiere_correr := Input.is_action_pressed("correr") and dir != 0.0
 	var vel := VEL_CAMINAR
-	if Juego.partida.arrastrandose:
+	var quiere_correr := Input.is_action_pressed("correr") and dir != Vector2.ZERO
+	if not en_curso:
+		dir = Vector2.ZERO
+	elif Juego.partida.arrastrandose:
 		vel = VEL_ARRASTRE
 	elif Juego.partida.lleva_comida:
 		vel = VEL_CARGAR
 	elif quiere_correr:
 		vel = VEL_CORRER
 
-	velocity.x = dir * vel
-	if dir != 0.0:
-		_cuerpo.scale.x = signf(dir)
-
-	if Input.is_action_just_pressed("saltar") and is_on_floor() and not Juego.partida.arrastrandose:
-		velocity.y = -SALTO
-		intento_saltar.emit()
-
+	velocity = dir * vel
 	move_and_slide()
 
-	if absf(dir) > 0.1:
+	if dir.length() > 0.15:
+		rotation = dir.angle()
+		_paso += delta * 14.0
 		_gasto_acum += delta
 		var ritmo := 0.34 if quiere_correr else 0.52
-		if _gasto_acum >= ritmo:
+		if en_curso and _gasto_acum >= ritmo:
 			_gasto_acum = 0.0
-			intento_correr.emit()
-			if quiere_correr:
+			intento_mover.emit()
+			if gasta_energia:
 				Juego.partida.correr()
-			else:
-				Juego.partida.correr()
+	for i in _patas.size():
+		_patas[i].rotation = sin(_paso + i) * 0.25 if dir.length() > 0.15 else 0.0
 
-	_mandibulas.rotation = 0.35 if Juego.partida.lleva_comida or _comida_vista else 0.0
-	var cansancio := 1.0 - (Juego.partida.energia / 100.0)
-	if Juego.partida.arrastrandose:
-		modulate = Color(0.55, 0.45, 0.4)
-	else:
-		modulate = Color(1, 1.0 - cansancio * 0.25, 1.0 - cansancio * 0.35)
-	_cuerpo.position.y = sin(Time.get_ticks_msec() * 0.012) * (1.2 if absf(dir) > 0.1 else 0.2)
+	_mandibulas.rotation = 0.35 if (Juego.partida and Juego.partida.lleva_comida) or _comida_vista else 0.0
+	if Juego.partida:
+		var cansancio := 1.0 - (Juego.partida.energia / 100.0)
+		modulate = Color(0.55, 0.45, 0.4) if Juego.partida.arrastrandose else Color(1, 1.0 - cansancio * 0.2, 1.0 - cansancio * 0.3)
 
 	if _comida_vista and is_instance_valid(_comida_vista):
-		_comida_vista.global_position = global_position + Vector2(_cuerpo.scale.x * 18, -6)
+		_comida_vista.global_position = global_position + Vector2.RIGHT.rotated(rotation) * 16.0
+
+	_revisar_comida_solapada()
+
+
+func _revisar_comida_solapada() -> void:
+	if _sensor == null:
+		return
+	for area in _sensor.get_overlapping_areas():
+		if area.is_in_group("comida"):
+			cerca_de_comida.emit(area)
 
 
 func tiene_comida_vista() -> bool:
@@ -155,7 +174,9 @@ func tomar(pieza: Node2D) -> void:
 
 func soltar_vista() -> void:
 	if _comida_vista and is_instance_valid(_comida_vista):
+		if _comida_vista is ComidaPieza:
+			(_comida_vista as ComidaPieza).liberar()
 		var pos := _comida_vista.global_position
 		_comida_vista.reparent(get_parent())
-		_comida_vista.global_position = pos + Vector2(0, 8)
+		_comida_vista.global_position = pos
 	_comida_vista = null

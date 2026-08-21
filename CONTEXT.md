@@ -65,5 +65,9 @@ Zona que restaura Energía. El Invierno no se detiene mientras descansa.
 _Avoid_: save point, cama infinita, pausa
 
 **Afuera**:
-El único exterior. Suelo del bosque a escala de Hormiga. Ahí vive la Comida.
+El único exterior. La superficie arriba del Hormiguero. Ahí vive la Comida.
 _Avoid_: mundo, overworld, biomas, nivel 2
+
+**Obrera**:
+Una hormiga del Hormiguero que no controla la jugadora. Camina y trabaja en los túneles.
+_Avoid_: NPC, enemigo, segundo jugador

@@ -113,19 +113,17 @@ func _stress_limite_blanco_en_300() -> void:
 
 
 func _geometry_suelos_solapados() -> void:
-	var nido := Rect2(-80, 520, 1960, 220)
-	var afuera := Rect2(1760, 460, 2400, 280)
-	var overlap := nido.intersection(afuera)
-	var hormiga_en_nido := Vector2(1800, 510)
-	_ok("hormiguero y afuera no se solapan", overlap.size.x <= 0.0)
-	_ok("una hormiga sobre el nido no queda dentro del collider de afuera", not afuera.has_point(hormiga_en_nido))
+	var m := HormigueroMapa.new()
+	m.generar()
+	_ok("spawn esta mas abajo que la superficie", m.spawn.y > m.superficie_y)
+	_ok("energia se gasta en superficie", m.esta_afuera(m.comidas[0]))
+	_ok("energia no se gasta en el almacen", m.esta_afuera(m.almacen) == false)
 
 
 func _geometry_derrumbada_no_bloquea_el_piso() -> void:
-	var derrumbe := Rect2(300, 280, 90, 160)
-	var piso_y := 510.0
-	var cruza_piso := derrumbe.position.y + derrumbe.size.y > piso_y
-	_ok("la derrumbada intercepta el piso caminable", cruza_piso)
+	var m := HormigueroMapa.new()
+	m.generar()
+	_ok("hay una derrumbada que tapa tunel", m.hay_derrumbada_en_tunel())
 
 
 func _stress_bob_larvas_deriva() -> void:
@@ -136,17 +134,13 @@ func _stress_bob_larvas_deriva() -> void:
 
 
 func _contrato_comida_soltada_sigue_tomada() -> void:
-	# Replica el contrato roto de mundo.gd + comida_pieza.gd:
-	# al arrastrarse se llama soltar() en Partida y soltar_vista() en la Hormiga,
-	# pero ComidaPieza.tomada nunca vuelve a false.
-	var tomada := true
-	var lleva := true
+	# soltar_vista llama ComidaPieza.liberar() para poder recoger otra vez.
+	var pieza := ComidaPieza.new()
+	pieza.tomada = true
 	var p := Partida.new()
 	p.cargar()
 	while p.energia > 0:
 		p.correr()
-	lleva = p.lleva_comida
-	# mundo no toca `tomada` al soltar
-	var puede_recoger := not tomada
-	_ok("partida suelta la comida al llegar a 0", lleva == false)
-	_ok("la pieza se puede volver a recoger despues de soltarla", puede_recoger)
+	pieza.liberar()
+	_ok("partida suelta la comida al llegar a 0", p.lleva_comida == false)
+	_ok("la pieza se puede volver a recoger despues de soltarla", pieza.tomada == false)

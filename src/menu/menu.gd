@@ -1,8 +1,8 @@
 extends Control
 
-const TIERRA := Color(0.12, 0.07, 0.05)
-const AMBAR := Color(0.83, 0.63, 0.22)
-const HUESO := Color(0.86, 0.78, 0.68)
+const TIERRA := Color(0.725, 0.478, 0.275)
+const AMBAR := Color(0.83, 0.58, 0.22)
+const HUESO := Color(0.93, 0.86, 0.72)
 
 
 func _ready() -> void:
@@ -16,7 +16,7 @@ func _armar() -> void:
 	add_child(fondo)
 
 	var frio := ColorRect.new()
-	frio.color = Color(0.45, 0.55, 0.62, 0.12)
+	frio.color = Color(0.78, 0.55, 0.32, 0.18)
 	frio.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(frio)
 
