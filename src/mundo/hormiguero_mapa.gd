@@ -17,8 +17,11 @@ var reina: Vector2 = Vector2.ZERO
 var larvas: Vector2 = Vector2.ZERO
 var almacen: Vector2 = Vector2.ZERO
 var descanso: Vector2 = Vector2.ZERO
+var reconstruccion: Vector2 = Vector2.ZERO
 var derrumbada: Rect2 = Rect2()
 var comidas: Array[Vector2] = []
+var fragmentos_hoja: Array[Vector2] = []
+var fragmentos_pala: Array[Vector2] = []
 var rutas_obreras: Array = []
 
 
@@ -82,12 +85,14 @@ func _cavar_tuneles() -> void:
 	_camara(36, 48, 7, 5) # larvas
 	_camara(54, 44, 7, 5) # almacen
 	_camara(36, 72, 6, 5) # descanso
+	_camara(54, 72, 6, 5) # reconstruccion
 	_camara(22, 88, 5, 4)
 	_camara(50, 90, 6, 4)
 	_linea(36, 10, 36, 48, 2)
 	_linea(36, 48, 12, 38, 2)
 	_linea(36, 48, 54, 44, 2)
 	_linea(36, 48, 36, 72, 2)
+	_linea(36, 72, 54, 72, 2)
 	_linea(36, 72, 22, 88, 2)
 	_linea(36, 72, 50, 90, 2)
 	_linea(12, 38, 22, 88, 1)
@@ -131,6 +136,7 @@ func _colocar_puntos() -> void:
 	larvas = mundo(36, 48)
 	almacen = mundo(54, 44)
 	descanso = mundo(36, 72)
+	reconstruccion = mundo(54, 72)
 	spawn = mundo(54, 44)
 	derrumbada = Rect2(mundo(18, 24) - Vector2(TILE, TILE), Vector2(TILE * 7, TILE * 9))
 	comidas = [
@@ -139,6 +145,16 @@ func _colocar_puntos() -> void:
 		mundo(44, 10),
 		mundo(52, 10),
 		mundo(60, 10),
+	]
+	fragmentos_hoja = [
+		mundo(18, 9),
+		mundo(36, 9),
+		mundo(56, 9),
+	]
+	fragmentos_pala = [
+		mundo(26, 9),
+		mundo(46, 9),
+		mundo(62, 9),
 	]
 	rutas_obreras = [
 		[mundo(36, 16), mundo(36, 40), mundo(20, 38), mundo(36, 40)],
@@ -156,3 +172,13 @@ func hay_derrumbada_en_tunel() -> bool:
 			if get_celda(x, y) == DERRUMBADA:
 				return true
 	return false
+
+
+func desbloquear_derrumbada() -> Array[Vector2i]:
+	var despejadas: Array[Vector2i] = []
+	for y in ALTO:
+		for x in ANCHO:
+			if get_celda(x, y) == DERRUMBADA:
+				_poner(x, y, TUNEL)
+				despejadas.append(Vector2i(x, y))
+	return despejadas

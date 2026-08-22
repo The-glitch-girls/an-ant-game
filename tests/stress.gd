@@ -124,6 +124,8 @@ func _geometry_derrumbada_no_bloquea_el_piso() -> void:
 	var m := HormigueroMapa.new()
 	m.generar()
 	_ok("hay una derrumbada que tapa tunel", m.hay_derrumbada_en_tunel())
+	m.desbloquear_derrumbada()
+	_ok("la pala puede despejar la derrumbada", m.hay_derrumbada_en_tunel() == false)
 
 
 func _stress_bob_larvas_deriva() -> void:

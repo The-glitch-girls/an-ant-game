@@ -14,7 +14,7 @@ var _gasto_acum: float = 0.0
 var _mandibulas: Node2D
 var _cuerpo: Node2D
 var _patas: Array[Node2D] = []
-var _comida_vista: Node2D
+var _comidas_vista: Array[Node2D] = []
 var _sensor: Area2D
 var _paso: float = 0.0
 
@@ -140,13 +140,16 @@ func _physics_process(delta: float) -> void:
 	for i in _patas.size():
 		_patas[i].rotation = sin(_paso + i) * 0.25 if dir.length() > 0.15 else 0.0
 
-	_mandibulas.rotation = 0.35 if (Juego.partida and Juego.partida.lleva_comida) or _comida_vista else 0.0
+	_mandibulas.rotation = 0.35 if (Juego.partida and Juego.partida.lleva_comida) or not _comidas_vista.is_empty() else 0.0
 	if Juego.partida:
 		var cansancio := 1.0 - (Juego.partida.energia / 100.0)
 		modulate = Color(0.55, 0.45, 0.4) if Juego.partida.arrastrandose else Color(1, 1.0 - cansancio * 0.2, 1.0 - cansancio * 0.3)
 
-	if _comida_vista and is_instance_valid(_comida_vista):
-		_comida_vista.global_position = global_position + Vector2.RIGHT.rotated(rotation) * 16.0
+	for i in _comidas_vista.size():
+		var pieza := _comidas_vista[i]
+		if is_instance_valid(pieza):
+			var lateral := Vector2(0, (i - 1) * 10.0).rotated(rotation)
+			pieza.global_position = global_position + Vector2.RIGHT.rotated(rotation) * 18.0 + lateral
 
 	_revisar_comida_solapada()
 
@@ -160,23 +163,27 @@ func _revisar_comida_solapada() -> void:
 
 
 func tiene_comida_vista() -> bool:
-	return _comida_vista != null and is_instance_valid(_comida_vista)
-
-
-func comida_vista() -> Node2D:
-	return _comida_vista
+	return not _comidas_vista.is_empty()
 
 
 func tomar(pieza: Node2D) -> void:
-	_comida_vista = pieza
+	_comidas_vista.append(pieza)
 	pieza.reparent(self)
 
 
+func soltar_una_vista() -> Node2D:
+	if _comidas_vista.is_empty():
+		return null
+	var pieza := _comidas_vista.pop_front() as Node2D
+	if is_instance_valid(pieza):
+		var pos := pieza.global_position
+		pieza.reparent(get_parent())
+		pieza.global_position = pos
+	return pieza
+
+
 func soltar_vista() -> void:
-	if _comida_vista and is_instance_valid(_comida_vista):
-		if _comida_vista is ComidaPieza:
-			(_comida_vista as ComidaPieza).liberar()
-		var pos := _comida_vista.global_position
-		_comida_vista.reparent(get_parent())
-		_comida_vista.global_position = pos
-	_comida_vista = null
+	while not _comidas_vista.is_empty():
+		var pieza := soltar_una_vista()
+		if pieza is ComidaPieza:
+			(pieza as ComidaPieza).liberar()

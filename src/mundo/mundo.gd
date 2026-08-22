@@ -11,10 +11,15 @@ var _larvas: Array[Node2D] = []
 var _almacen_area: Area2D
 var _reina_area: Area2D
 var _descanso_area: Area2D
+var _reconstruccion_area: Area2D
+var _derrumbada_area: Area2D
 var _en_descanso: bool = false
 var _reloj: float = 0.0
 var _final_mostrado: bool = false
 var _ui_almacen: Label
+var _ui_hoja: Label
+var _ui_pala: Label
+var _ui_mensaje: Label
 var _capas_hielo: Array[ColorRect] = []
 var _tiles: TileMapLayer
 
@@ -27,11 +32,13 @@ func _ready() -> void:
 	_pintar_cielo()
 	_construir_tiles()
 	_polvo_derrumbada()
+	_construir_estacion_reconstruccion()
 	_etiquetar_camaras()
 	_construir_zonas()
 	_construir_hormiga()
 	_construir_obreras()
 	_construir_comidas()
+	_construir_fragmentos()
 	_construir_larvas()
 	_construir_clima()
 	_construir_ui()
@@ -118,20 +125,20 @@ func _polvo_derrumbada() -> void:
 	mat.color = Paleta.TIERRA_MANCHA
 	polvo.process_material = mat
 	add_child(polvo)
-	var zona := Area2D.new()
-	zona.position = polvo.position
-	zona.collision_layer = 0
-	zona.collision_mask = 2
-	zona.monitoring = true
+	_derrumbada_area = Area2D.new()
+	_derrumbada_area.position = polvo.position
+	_derrumbada_area.collision_layer = 0
+	_derrumbada_area.collision_mask = 2
+	_derrumbada_area.monitoring = true
 	var col := CollisionShape2D.new()
 	var shape := RectangleShape2D.new()
 	shape.size = _mapa.derrumbada.size
 	col.shape = shape
-	zona.add_child(col)
-	zona.body_entered.connect(func(_b: Node) -> void:
+	_derrumbada_area.add_child(col)
+	_derrumbada_area.body_entered.connect(func(_b: Node) -> void:
 		_sfx.tocar("soltar")
 	)
-	add_child(zona)
+	add_child(_derrumbada_area)
 
 
 func _etiquetar_camaras() -> void:
@@ -139,6 +146,27 @@ func _etiquetar_camaras() -> void:
 	_label(_mapa.larvas + Vector2(-28, -36), "Larvas")
 	_label(_mapa.almacen + Vector2(-32, -36), "Almacén")
 	_label(_mapa.descanso + Vector2(-34, -36), "Descanso")
+	_label(_mapa.reconstruccion + Vector2(-66, -36), "Zona de reconstruccion")
+
+
+func _construir_estacion_reconstruccion() -> void:
+	var base := _ovalo(_mapa.reconstruccion, Vector2(78, 42), Paleta.TUNEL_OSCURO)
+	base.z_index = 1
+	add_child(base)
+	var mesa := _ovalo(_mapa.reconstruccion, Vector2(52, 24), Paleta.HUESO)
+	mesa.z_index = 2
+	add_child(mesa)
+	_agregar_sprite(_mapa.reconstruccion + Vector2(-18, -2), "res://assets/items/leaf_cc0.png", 1.15, 3)
+	_agregar_sprite(_mapa.reconstruccion + Vector2(20, -2), "res://assets/items/shovel_cc0.png", 1.15, 3)
+
+
+func _agregar_sprite(pos: Vector2, ruta: String, escala: float, z: int) -> void:
+	var sprite := Sprite2D.new()
+	sprite.texture = load(ruta)
+	sprite.position = pos
+	sprite.scale = Vector2.ONE * escala
+	sprite.z_index = z
+	add_child(sprite)
 
 
 func _label(pos: Vector2, texto: String) -> void:
@@ -155,6 +183,7 @@ func _construir_zonas() -> void:
 	_reina_area = _zona(_mapa.reina, t, "reina")
 	_almacen_area = _zona(_mapa.almacen, t, "almacen")
 	_descanso_area = _zona(_mapa.descanso, t, "descanso")
+	_reconstruccion_area = _zona(_mapa.reconstruccion, t, "reconstruccion")
 	_zona(_mapa.larvas, t, "larvas")
 
 
@@ -210,6 +239,20 @@ func _construir_comidas() -> void:
 		add_child(c)
 
 
+func _construir_fragmentos() -> void:
+	_crear_fragmentos(Partida.Herramienta.HOJA, ["tallo", "cuerpo", "borde"], _mapa.fragmentos_hoja)
+	_crear_fragmentos(Partida.Herramienta.PALA, ["mango", "cabezal", "restante"], _mapa.fragmentos_pala)
+
+
+func _crear_fragmentos(herramienta: Partida.Herramienta, ids: Array[String], posiciones: Array[Vector2]) -> void:
+	for i in posiciones.size():
+		var f := FragmentoHerramienta.new()
+		f.configurar(herramienta, ids[i])
+		f.position = posiciones[i]
+		f.tocado.connect(_on_fragmento_tocado)
+		add_child(f)
+
+
 func _construir_larvas() -> void:
 	for i in 3:
 		_larvas.append(_larva(_mapa.larvas + Vector2(-18 + i * 18, 8)))
@@ -246,6 +289,21 @@ func _construir_ui() -> void:
 	_ui_almacen.add_theme_font_size_override("font_size", 18)
 	_ui_almacen.add_theme_color_override("font_color", Paleta.HORMIGA_OSCURA)
 	capa.add_child(_ui_almacen)
+	_ui_hoja = Label.new()
+	_ui_hoja.position = Vector2(24, 46)
+	_ui_hoja.add_theme_font_size_override("font_size", 16)
+	_ui_hoja.add_theme_color_override("font_color", Paleta.HORMIGA_OSCURA)
+	capa.add_child(_ui_hoja)
+	_ui_pala = Label.new()
+	_ui_pala.position = Vector2(24, 68)
+	_ui_pala.add_theme_font_size_override("font_size", 16)
+	_ui_pala.add_theme_color_override("font_color", Paleta.HORMIGA_OSCURA)
+	capa.add_child(_ui_pala)
+	_ui_mensaje = Label.new()
+	_ui_mensaje.position = Vector2(24, 94)
+	_ui_mensaje.add_theme_font_size_override("font_size", 15)
+	_ui_mensaje.add_theme_color_override("font_color", Paleta.HORMIGA_OSCURA)
+	capa.add_child(_ui_mensaje)
 	for i in 4:
 		var borde := ColorRect.new()
 		borde.color = Color(0.75, 0.85, 0.95, 0.0)
@@ -279,7 +337,9 @@ func _process(delta: float) -> void:
 	_actualizar_zonas()
 	_actualizar_larvas()
 	_actualizar_estacion()
-	_ui_almacen.text = "Almacén  %d / 5" % p.comida_en_almacen
+	_ui_almacen.text = "Almacén  %d / 5   Cargas  %d / %d" % [p.comida_en_almacen, p.comidas_cargadas, Partida.COMIDAS_MAXIMAS_CARGADAS]
+	_ui_hoja.text = "Hoja  %d / %d%s" % [p.cantidad_fragmentos(Partida.Herramienta.HOJA), Partida.FRAGMENTOS_POR_HERRAMIENTA, "  reconstruida" if p.tiene_herramienta(Partida.Herramienta.HOJA) else ""]
+	_ui_pala.text = "Pala  %d / %d%s" % [p.cantidad_fragmentos(Partida.Herramienta.PALA), Partida.FRAGMENTOS_POR_HERRAMIENTA, "  reconstruida" if p.tiene_herramienta(Partida.Herramienta.PALA) else ""]
 	if p.resultado != Partida.Resultado.EN_CURSO:
 		_mostrar_final()
 
@@ -290,12 +350,13 @@ func _actualizar_zonas() -> void:
 		_hormiga.soltar_vista()
 		_sfx.tocar("soltar")
 	if _almacen_area.overlaps_body(_hormiga) and p.lleva_comida:
-		if p.depositar(Partida.Destino.ALMACEN):
-			var pieza := _hormiga.comida_vista()
+		while p.lleva_comida:
+			if not p.depositar(Partida.Destino.ALMACEN):
+				break
+			var pieza := _hormiga.soltar_una_vista()
 			if pieza is ComidaPieza:
 				(pieza as ComidaPieza).depositada = true
 				pieza.visible = false
-			_hormiga.soltar_vista()
 			_sfx.tocar("depositar")
 			_mostrar_comida_en_almacen(p.comida_en_almacen)
 	if _reina_area.overlaps_body(_hormiga) and p.lleva_comida:
@@ -307,6 +368,22 @@ func _actualizar_zonas() -> void:
 			_sfx.tocar("descanso")
 	else:
 		_en_descanso = false
+	if _reconstruccion_area.overlaps_body(_hormiga) and Input.is_action_just_pressed("reconstruir"):
+		if p.reconstruir(Partida.Herramienta.HOJA):
+			_mostrar_mensaje("Reconstruiste la Hoja. Ya puedes cargar hasta 3 Comidas.")
+			_sfx.tocar("depositar")
+		elif p.reconstruir(Partida.Herramienta.PALA):
+			_mostrar_mensaje("Reconstruiste la Pala. Úsala con E en una Derrumbada.")
+			_sfx.tocar("depositar")
+		elif p.tiene_herramienta(Partida.Herramienta.HOJA):
+			_mostrar_mensaje("No hay otra herramienta lista para reconstruir.")
+		else:
+			_mostrar_mensaje("Faltan fragmentos de Hoja o Pala.")
+	if _derrumbada_area and _derrumbada_area.overlaps_body(_hormiga) and Input.is_action_just_pressed("usar_herramienta"):
+		if p.tiene_herramienta(Partida.Herramienta.PALA):
+			_desbloquear_derrumbada()
+		else:
+			_mostrar_mensaje("Necesitas reconstruir la Pala.")
 
 
 func _mostrar_comida_en_almacen(n: int) -> void:
@@ -315,11 +392,35 @@ func _mostrar_comida_en_almacen(n: int) -> void:
 
 func _on_cerca_comida(pieza: Node2D) -> void:
 	var p: Partida = Juego.partida
+	if not p.tiene_herramienta(Partida.Herramienta.HOJA):
+		return
 	if pieza is ComidaPieza and not (pieza as ComidaPieza).tomada and not (pieza as ComidaPieza).depositada:
 		if p.cargar():
 			(pieza as ComidaPieza).tomada = true
 			_hormiga.tomar(pieza)
 			_sfx.tocar("cargar")
+
+
+func _on_fragmento_tocado(herramienta: Partida.Herramienta, id: String, fragmento: FragmentoHerramienta) -> void:
+	if Juego.partida.recoger_fragmento(herramienta, id):
+		fragmento.recoger()
+		var nombre := "Hoja" if herramienta == Partida.Herramienta.HOJA else "Pala"
+		_mostrar_mensaje("Encontraste un fragmento de %s." % nombre)
+		_sfx.tocar("cargar")
+
+
+func _mostrar_mensaje(texto: String) -> void:
+	if _ui_mensaje:
+		_ui_mensaje.text = texto
+
+
+func _desbloquear_derrumbada() -> void:
+	for celda in _mapa.desbloquear_derrumbada():
+		_tiles.set_cell(celda, 0, Vector2i(1, 0))
+	_derrumbada_area.monitoring = false
+	_derrumbada_area.queue_free()
+	_mostrar_mensaje("La Pala despejó la Derrumbada.")
+	_sfx.tocar("soltar")
 
 
 func _actualizar_larvas() -> void:
