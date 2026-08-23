@@ -296,6 +296,7 @@ func _process(delta: float) -> void:
 	if p == null or _hormiga == null:
 		return
 	_hormiga.gasta_energia = _mapa.esta_afuera(_hormiga.global_position)
+	p.actualizar_carga(delta)
 	_reloj += delta
 	if p.resultado == Partida.Resultado.EN_CURSO and _reloj >= SEGUNDOS_POR_TIEMPO:
 		_reloj = 0.0
@@ -304,7 +305,9 @@ func _process(delta: float) -> void:
 	_actualizar_larvas()
 	_actualizar_estacion()
 	_ui_almacen.text = "Almacén  %d / 5" % p.comida_en_almacen
-	_ui_energia_label.text = "Energía  %d / %d" % [_hormiga.energia, _hormiga.energia_maxima]
+	_ui_energia_label.text = "Energía  %d / %d" % [p.energia, p.ENERGIA_INICIAL]
+	_actualizar_barra_energia()
+	
 	if p.resultado != Partida.Resultado.EN_CURSO:
 		_mostrar_final()
 
