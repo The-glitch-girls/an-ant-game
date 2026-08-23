@@ -121,6 +121,8 @@ func _physics_process(delta: float) -> void:
 		vel = VEL_ARRASTRE
 	elif Juego.partida.lleva_comida:
 		vel = VEL_CARGAR
+		if _comida_vista is ComidaPieza:
+			vel = (_comida_vista as ComidaPieza).velocidad_carga()
 	elif quiere_correr:
 		vel = VEL_CORRER
 
@@ -146,7 +148,10 @@ func _physics_process(delta: float) -> void:
 		modulate = Color(0.55, 0.45, 0.4) if Juego.partida.arrastrandose else Color(1, 1.0 - cansancio * 0.2, 1.0 - cansancio * 0.3)
 
 	if _comida_vista and is_instance_valid(_comida_vista):
-		_comida_vista.global_position = global_position + Vector2.RIGHT.rotated(rotation) * 16.0
+		var dist := 16.0
+		if _comida_vista is ComidaPieza:
+			dist = (_comida_vista as ComidaPieza).distancia_mandibulas()
+		_comida_vista.global_position = global_position + Vector2.RIGHT.rotated(rotation) * dist
 
 	_revisar_comida_solapada()
 

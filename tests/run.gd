@@ -16,6 +16,8 @@ func _init() -> void:
 	_test_descansar_restaura_energia_y_el_invierno_avanza()
 	_test_victoria_no_se_vuelve_derrota_al_llegar_el_blanco()
 	_test_minimapa_cubre_el_hormiguero_y_marca_la_hormiga()
+	_test_comida_grande_pesa_mas_que_la_chica()
+	_test_afuera_tiene_comidas_de_tres_tamanos()
 
 	print("PARTIDA %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
@@ -119,6 +121,33 @@ func _test_minimapa_cubre_el_hormiguero_y_marca_la_hormiga() -> void:
 	_ok("el punto de afuera queda dentro", marco.has_point(afuera))
 	_ok("afuera se lee arriba del hormiguero", afuera.y < en_almacen.y)
 	mini.free()
+
+
+func _test_comida_grande_pesa_mas_que_la_chica() -> void:
+	var chica := ComidaPieza.new()
+	chica.tamano = ComidaPieza.Tamano.CHICA
+	var grande := ComidaPieza.new()
+	grande.tamano = ComidaPieza.Tamano.GRANDE
+	_ok("la grande se ve mas que la chica", grande.escala() > chica.escala())
+	var liviana := Partida.new()
+	liviana.cargar(chica.costo_carga())
+	liviana.correr()
+	var pesada := Partida.new()
+	pesada.cargar(grande.costo_carga())
+	pesada.correr()
+	_ok("cargar grande gasta mas energia", pesada.energia < liviana.energia)
+	chica.free()
+	grande.free()
+
+
+func _test_afuera_tiene_comidas_de_tres_tamanos() -> void:
+	var m := HormigueroMapa.new()
+	m.generar()
+	var vistos := {}
+	for t in m.comida_tamanos:
+		vistos[t] = true
+	_ok("hay comida chica media y grande", vistos.size() == 3)
+	_ok("la semilla grande esta en la boca del nido", m.hay_comida_grande_en_la_boca())
 
 
 func _test_victoria_no_se_vuelve_derrota_al_llegar_el_blanco() -> void:

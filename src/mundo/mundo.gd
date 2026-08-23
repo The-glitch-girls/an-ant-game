@@ -205,9 +205,10 @@ func _construir_obreras() -> void:
 
 
 func _construir_comidas() -> void:
-	for p in _mapa.comidas:
+	for i in _mapa.comidas.size():
 		var c := ComidaPieza.new()
-		c.position = p
+		c.tamano = _mapa.comida_tamanos[i] as ComidaPieza.Tamano
+		c.position = _mapa.comidas[i]
 		add_child(c)
 
 
@@ -306,12 +307,14 @@ func _actualizar_zonas() -> void:
 	if _almacen_area.overlaps_body(_hormiga) and p.lleva_comida:
 		if p.depositar(Partida.Destino.ALMACEN):
 			var pieza := _hormiga.comida_vista()
+			var depositada: ComidaPieza = null
 			if pieza is ComidaPieza:
-				(pieza as ComidaPieza).depositada = true
-				pieza.visible = false
+				depositada = pieza as ComidaPieza
+				depositada.depositada = true
+				depositada.visible = false
 			_hormiga.soltar_vista()
 			_sfx.tocar("depositar")
-			_mostrar_comida_en_almacen(p.comida_en_almacen)
+			_mostrar_comida_en_almacen(p.comida_en_almacen, depositada)
 	if _reina_area.overlaps_body(_hormiga) and p.lleva_comida:
 		p.depositar(Partida.Destino.CAMARA_REINA)
 	if _descanso_area.overlaps_body(_hormiga):
@@ -323,16 +326,18 @@ func _actualizar_zonas() -> void:
 		_en_descanso = false
 
 
-func _mostrar_comida_en_almacen(n: int) -> void:
-	add_child(_ovalo(_mapa.almacen + Vector2(-20 + n * 12, 14), Vector2(16, 10), Paleta.TUNEL_OSCURO))
+func _mostrar_comida_en_almacen(n: int, pieza: ComidaPieza) -> void:
+	var e := pieza.escala() if pieza else 1.0
+	add_child(_ovalo(_mapa.almacen + Vector2(-24 + n * 15, 14), Vector2(16 * e, 10 * e), Paleta.TUNEL_OSCURO))
 
 
 func _on_cerca_comida(pieza: Node2D) -> void:
 	var p: Partida = Juego.partida
 	if pieza is ComidaPieza and not (pieza as ComidaPieza).tomada and not (pieza as ComidaPieza).depositada:
-		if p.cargar():
-			(pieza as ComidaPieza).tomada = true
-			_hormiga.tomar(pieza)
+		var semilla := pieza as ComidaPieza
+		if p.cargar(semilla.costo_carga()):
+			semilla.tomada = true
+			_hormiga.tomar(semilla)
 			_sfx.tocar("cargar")
 
 

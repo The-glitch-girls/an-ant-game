@@ -19,6 +19,7 @@ var almacen: Vector2 = Vector2.ZERO
 var descanso: Vector2 = Vector2.ZERO
 var derrumbada: Rect2 = Rect2()
 var comidas: Array[Vector2] = []
+var comida_tamanos: Array[int] = []
 var rutas_obreras: Array = []
 
 
@@ -140,6 +141,13 @@ func _colocar_puntos() -> void:
 		mundo(52, 10),
 		mundo(60, 10),
 	]
+	comida_tamanos = [
+		ComidaPieza.Tamano.CHICA,
+		ComidaPieza.Tamano.MEDIA,
+		ComidaPieza.Tamano.GRANDE,
+		ComidaPieza.Tamano.MEDIA,
+		ComidaPieza.Tamano.CHICA,
+	]
 	rutas_obreras = [
 		[mundo(36, 16), mundo(36, 40), mundo(20, 38), mundo(36, 40)],
 		[mundo(40, 48), mundo(54, 44), mundo(50, 70), mundo(54, 44)],
@@ -148,6 +156,15 @@ func _colocar_puntos() -> void:
 		[mundo(12, 38), mundo(16, 50), mundo(12, 38)],
 		[mundo(50, 90), mundo(54, 70), mundo(50, 90)],
 	]
+
+
+func hay_comida_grande_en_la_boca() -> bool:
+	for i in comidas.size():
+		if comida_tamanos[i] != ComidaPieza.Tamano.GRANDE:
+			continue
+		if absf(comidas[i].x - mundo(36, 10).x) <= TILE * 10.0:
+			return true
+	return false
 
 
 func hay_derrumbada_en_tunel() -> bool:

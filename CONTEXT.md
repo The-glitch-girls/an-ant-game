@@ -5,8 +5,8 @@ Un juego 2D sobre una hormiga que debe abastecer un nido fragmentado antes de qu
 ## Language
 
 **Comida**:
-El único recurso de victoria. Objeto físico: la Hormiga carga uno a la vez, en las mandíbulas. Con 5 en el Almacén antes del Invierno, se gana.
-_Avoid_: alimento, recurso, fragmento, hoja, stack
+El único recurso de victoria. Objeto físico: la Hormiga carga uno a la vez, en las mandíbulas. Hay piezas chicas, medias y grandes: las grandes pesan más y se ven más que el cuerpo. Con 5 en el Almacén antes del Invierno, se gana.
+_Avoid_: alimento, recurso, fragmento, hoja, stack, manzana, papaya
 
 **Almacén**:
 La zona del Hormiguero donde se deposita Comida. Cinco piezas aquí son la victoria.
