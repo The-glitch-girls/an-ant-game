@@ -14,6 +14,8 @@ var _descanso_area: Area2D
 var _en_descanso: bool = false
 var _reloj: float = 0.0
 var _final_mostrado: bool = false
+var _ui_almacen: Label
+var _mini_mapa: MiniMapa
 var _capas_hielo: Array[ColorRect] = []
 var _tiles: TileMapLayer
 # UI contadores
@@ -289,6 +291,17 @@ func _construir_ui() -> void:
 				borde.offset_left = -22
 		capa.add_child(borde)
 		_capas_hielo.append(borde)
+	_mini_mapa = MiniMapa.new()
+	_mini_mapa.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	_mini_mapa.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_mini_mapa.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_mini_mapa.offset_right = -22
+	_mini_mapa.offset_bottom = -22
+	_mini_mapa.offset_left = -22 - HormigueroMapa.ANCHO * MiniMapa.PX - MiniMapa.MARGEN * 2
+	_mini_mapa.offset_top = -22 - HormigueroMapa.ALTO * MiniMapa.PX - MiniMapa.MARGEN * 2
+	_mini_mapa.armar(_mapa)
+	_mini_mapa.marcar(_hormiga.position)
+	capa.add_child(_mini_mapa)
 
 
 func _process(delta: float) -> void:
@@ -310,6 +323,8 @@ func _process(delta: float) -> void:
 	_ui_almacen.text = "Almacén  %d / 5" % p.comida_en_almacen
 	_ui_energia_label.text = "Energía  %d / %d" % [p.energia, p.ENERGIA_INICIAL]
 	
+	if _mini_mapa:
+		_mini_mapa.marcar(_hormiga.global_position)
 	if p.resultado != Partida.Resultado.EN_CURSO:
 		_mostrar_final()
 
@@ -395,6 +410,8 @@ func _mostrar_final() -> void:
 	if _final_mostrado:
 		return
 	_final_mostrado = true
+	if _mini_mapa:
+		_mini_mapa.visible = false
 	var capa := CanvasLayer.new()
 	add_child(capa)
 	var fondo := ColorRect.new()
