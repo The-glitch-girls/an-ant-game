@@ -14,7 +14,7 @@ const TIEMPO_DESCANSO := 10
 const COSTO_CARGA_LIGERA := 1
 const COSTO_CARGA_PESADA := 3
 const INTERVALO_DESGASTE_CARGA := 2.0
-
+const VELOCIDAD_RECUPERACION := 10.0
 
 var energia: int = ENERGIA_INICIAL
 var comida_en_almacen: int = 0
@@ -24,8 +24,8 @@ var tiempo_cargando: float = 0.0
 var arrastrandose: bool = false
 var estacion: Estacion = Estacion.TARDE_HUMEDA
 var tiempo: int = 0
+var tiempo_descanso: float = 0.0
 var resultado: Resultado = Resultado.EN_CURSO
-
 
 func correr() -> void:
 	if resultado != Resultado.EN_CURSO:
@@ -65,7 +65,7 @@ func depositar(destino: Destino) -> bool:
 func descansar() -> void:
 	if resultado != Resultado.EN_CURSO:
 		return
-	energia = ENERGIA_INICIAL
+
 	arrastrandose = false
 	transcurrir(TIEMPO_DESCANSO)
 
@@ -101,3 +101,19 @@ func actualizar_carga(delta: float) -> void:
 
 		var costo: int = COSTO_CARGA_PESADA if comida_pesada else COSTO_CARGA_LIGERA
 		_gastar(costo)
+		
+
+# +1 energía cada 0.1 segundos = +10 por segundo
+func actualizar_descanso(delta: float) -> void:
+	if resultado != Resultado.EN_CURSO:
+		return
+
+	if energia >= ENERGIA_INICIAL:
+		energia = ENERGIA_INICIAL
+		return
+
+	tiempo_descanso += delta
+
+	if tiempo_descanso >= 0.1:
+		tiempo_descanso -= 0.1
+		energia = mini(ENERGIA_INICIAL, energia + 1)

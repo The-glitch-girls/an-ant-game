@@ -301,7 +301,7 @@ func _process(delta: float) -> void:
 	if p.resultado == Partida.Resultado.EN_CURSO and _reloj >= SEGUNDOS_POR_TIEMPO:
 		_reloj = 0.0
 		p.transcurrir(1)
-	_actualizar_zonas()
+	_actualizar_zonas(delta)
 	_actualizar_larvas()
 	_actualizar_estacion()
 	_ui_almacen.text = "Almacén  %d / 5" % p.comida_en_almacen
@@ -312,7 +312,7 @@ func _process(delta: float) -> void:
 		_mostrar_final()
 
 
-func _actualizar_zonas() -> void:
+func _actualizar_zonas(delta: float) -> void:
 	var p: Partida = Juego.partida
 	if p.arrastrandose and _hormiga.tiene_comida_vista():
 		_hormiga.soltar_vista()
@@ -333,6 +333,7 @@ func _actualizar_zonas() -> void:
 			_en_descanso = true
 			p.descansar()
 			_sfx.tocar("descanso")
+		p.actualizar_descanso(delta)
 	else:
 		_en_descanso = false
 
