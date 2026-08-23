@@ -14,10 +14,15 @@ var _descanso_area: Area2D
 var _en_descanso: bool = false
 var _reloj: float = 0.0
 var _final_mostrado: bool = false
-var _ui_almacen: Label
 var _capas_hielo: Array[ColorRect] = []
 var _tiles: TileMapLayer
-
+# UI contadores
+var _ui_almacen: Label
+var _ui_energia_label: Label
+var _ui_energia_fondo: ColorRect
+var _ui_energia_barra: ColorRect
+var energia_maxima := 100.0
+var energia := 100.0
 
 func _ready() -> void:
 	_sfx = Sfx.new()
@@ -244,8 +249,27 @@ func _construir_ui() -> void:
 	_ui_almacen = Label.new()
 	_ui_almacen.position = Vector2(24, 20)
 	_ui_almacen.add_theme_font_size_override("font_size", 18)
-	_ui_almacen.add_theme_color_override("font_color", Paleta.HORMIGA_OSCURA)
+	_ui_almacen.add_theme_color_override("font_color", Paleta.OJO)
 	capa.add_child(_ui_almacen)
+	# Barra de energía
+	_ui_energia_label = Label.new()
+	_ui_energia_label.position = Vector2(24, 48)
+	_ui_energia_label.add_theme_font_size_override("font_size", 18)
+	_ui_energia_label.add_theme_color_override("font_color", Paleta.OJO)
+	capa.add_child(_ui_energia_label)
+	_ui_energia_fondo = ColorRect.new()
+	_ui_energia_fondo.position = Vector2(24, 75)
+	_ui_energia_fondo.size = Vector2(180, 14)
+	_ui_energia_fondo.color = Paleta.OJO
+	_ui_energia_fondo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	capa.add_child(_ui_energia_fondo)
+	_ui_energia_barra = ColorRect.new()
+	_ui_energia_barra.position = Vector2(2, 2)
+	_ui_energia_barra.size = Vector2(176, 10)
+	_ui_energia_barra.color = Paleta.HOJA_VERDE
+	_ui_energia_barra.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ui_energia_fondo.add_child(_ui_energia_barra)
+
 	for i in 4:
 		var borde := ColorRect.new()
 		borde.color = Color(0.75, 0.85, 0.95, 0.0)
@@ -280,6 +304,7 @@ func _process(delta: float) -> void:
 	_actualizar_larvas()
 	_actualizar_estacion()
 	_ui_almacen.text = "Almacén  %d / 5" % p.comida_en_almacen
+	_ui_energia_label.text = "Energía  %d / %d" % [_hormiga.energia, _hormiga.energia_maxima]
 	if p.resultado != Partida.Resultado.EN_CURSO:
 		_mostrar_final()
 
@@ -420,3 +445,7 @@ func _pixel() -> Texture2D:
 	var img := Image.create(2, 2, false, Image.FORMAT_RGBA8)
 	img.fill(Color.WHITE)
 	return ImageTexture.create_from_image(img)
+	
+func _actualizar_barra_energia() -> void:
+	var porcentaje: float = clampf(energia / energia_maxima, 0.0, 1.0)
+	_ui_energia_barra.size.x = 176.0 * porcentaje
