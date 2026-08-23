@@ -14,7 +14,6 @@ var _descanso_area: Area2D
 var _en_descanso: bool = false
 var _reloj: float = 0.0
 var _final_mostrado: bool = false
-var _ui_almacen: Label
 var _mini_mapa: MiniMapa
 var _capas_hielo: Array[ColorRect] = []
 var _tiles: TileMapLayer
