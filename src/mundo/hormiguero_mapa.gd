@@ -17,6 +17,12 @@ var reina: Vector2 = Vector2.ZERO
 var larvas: Vector2 = Vector2.ZERO
 var almacen: Vector2 = Vector2.ZERO
 var descanso: Vector2 = Vector2.ZERO
+var boca: Vector2 = Vector2.ZERO
+var abandonada: Vector2 = Vector2.ZERO
+var humeda: Vector2 = Vector2.ZERO
+var ciega: Vector2 = Vector2.ZERO
+var silencio: Vector2 = Vector2.ZERO
+var fondo: Vector2 = Vector2.ZERO
 var derrumbada: Rect2 = Rect2()
 var comidas: Array[Vector2] = []
 var comida_tamanos: Array[int] = []
@@ -79,12 +85,16 @@ func _franja_superficie() -> void:
 
 
 func _cavar_tuneles() -> void:
-	_camara(12, 38, 7, 6) # reina
+	_camara(12, 38, 9, 7) # reina
 	_camara(36, 48, 7, 5) # larvas
 	_camara(54, 44, 7, 5) # almacen
 	_camara(36, 72, 6, 5) # descanso
-	_camara(22, 88, 5, 4)
-	_camara(50, 90, 6, 4)
+	_camara(36, 20, 6, 4) # boca
+	_camara(8, 56, 6, 5) # abandonada
+	_camara(58, 62, 6, 5) # humeda
+	_camara(16, 64, 5, 4) # ciega
+	_camara(22, 88, 5, 4) # silencio
+	_camara(50, 90, 6, 4) # fondo
 	_linea(36, 10, 36, 48, 2)
 	_linea(36, 48, 12, 38, 2)
 	_linea(36, 48, 54, 44, 2)
@@ -93,6 +103,9 @@ func _cavar_tuneles() -> void:
 	_linea(36, 72, 50, 90, 2)
 	_linea(12, 38, 22, 88, 1)
 	_linea(54, 44, 50, 90, 1)
+	_linea(12, 38, 8, 56, 1)
+	_linea(54, 44, 58, 62, 1)
+	_linea(36, 72, 16, 64, 1)
 	_linea(8, 10, 36, 10, 1)
 	_linea(36, 10, 62, 10, 1)
 	# atajo izquierdo tapado
@@ -132,6 +145,12 @@ func _colocar_puntos() -> void:
 	larvas = mundo(36, 48)
 	almacen = mundo(54, 44)
 	descanso = mundo(36, 72)
+	boca = mundo(36, 20)
+	abandonada = mundo(8, 56)
+	humeda = mundo(58, 62)
+	ciega = mundo(16, 64)
+	silencio = mundo(22, 88)
+	fondo = mundo(50, 90)
 	spawn = mundo(54, 44)
 	derrumbada = Rect2(mundo(18, 24) - Vector2(TILE, TILE), Vector2(TILE * 7, TILE * 9))
 	comidas = [
@@ -153,9 +172,15 @@ func _colocar_puntos() -> void:
 		[mundo(40, 48), mundo(54, 44), mundo(50, 70), mundo(54, 44)],
 		[mundo(36, 72), mundo(22, 88), mundo(36, 72), mundo(50, 90)],
 		[mundo(18, 10), mundo(40, 10), mundo(55, 10), mundo(30, 10)],
-		[mundo(12, 38), mundo(16, 50), mundo(12, 38)],
+		[mundo(18, 38), mundo(16, 50), mundo(18, 38)],
 		[mundo(50, 90), mundo(54, 70), mundo(50, 90)],
+		[mundo(8, 56), mundo(12, 48), mundo(8, 56)],
+		[mundo(54, 48), mundo(58, 62), mundo(54, 48)],
 	]
+
+
+func centros_de_zona() -> Array[Vector2]:
+	return [reina, larvas, almacen, descanso, boca, abandonada, humeda, ciega, silencio, fondo]
 
 
 func hay_comida_grande_en_la_boca() -> bool:

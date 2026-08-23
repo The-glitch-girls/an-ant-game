@@ -28,9 +28,11 @@ func _ready() -> void:
 	_pintar_cielo()
 	_construir_tiles()
 	_polvo_derrumbada()
+	_pintar_salas()
 	_etiquetar_camaras()
 	_construir_zonas()
 	_construir_hormiga()
+	_construir_reina()
 	_construir_obreras()
 	_construir_comidas()
 	_construir_larvas()
@@ -135,11 +137,51 @@ func _polvo_derrumbada() -> void:
 	add_child(zona)
 
 
+func _pintar_salas() -> void:
+	_suelo(_mapa.reina, Vector2(210, 160), Color(0.78, 0.62, 0.38, 0.55))
+	_suelo(_mapa.reina + Vector2(-8, 6), Vector2(150, 110), Color(0.55, 0.38, 0.18, 0.28))
+	_suelo(_mapa.larvas, Vector2(180, 130), Color(0.88, 0.72, 0.38, 0.42))
+	_suelo(_mapa.almacen, Vector2(176, 128), Color(0.72, 0.58, 0.32, 0.4))
+	_suelo(_mapa.descanso, Vector2(160, 120), Color(0.90, 0.80, 0.58, 0.38))
+	_suelo(_mapa.boca, Vector2(150, 100), Color(0.93, 0.86, 0.62, 0.35))
+	_suelo(_mapa.abandonada, Vector2(150, 118), Color(0.52, 0.40, 0.28, 0.5))
+	_suelo(_mapa.humeda, Vector2(154, 118), Color(0.62, 0.68, 0.66, 0.38))
+	_suelo(_mapa.ciega, Vector2(130, 100), Color(0.48, 0.34, 0.20, 0.48))
+	_suelo(_mapa.silencio, Vector2(130, 100), Color(0.38, 0.28, 0.18, 0.5))
+	_suelo(_mapa.fondo, Vector2(150, 108), Color(0.70, 0.52, 0.30, 0.36))
+	for off in [Vector2(-18, 12), Vector2(16, -6), Vector2(4, 18)]:
+		add_child(_ovalo(_mapa.abandonada + off, Vector2(13, 8), Color(0.32, 0.14, 0.08, 0.7)))
+	add_child(_ovalo(_mapa.humeda + Vector2(0, 18), Vector2(48, 14), Color(0.55, 0.66, 0.68, 0.35)))
+	add_child(_ovalo(_mapa.humeda + Vector2(-12, 8), Vector2(10, 7), Color(0.70, 0.80, 0.82, 0.4)))
+	add_child(_ovalo(_mapa.ciega + Vector2(-22, 0), Vector2(18, 36), Paleta.TIERRA_MANCHA))
+	add_child(_ovalo(_mapa.silencio + Vector2(10, 8), Vector2(12, 7), Color(0.28, 0.12, 0.08, 0.65)))
+	add_child(_ovalo(_mapa.descanso + Vector2(-16, 10), Vector2(28, 12), Color(0.86, 0.74, 0.50, 0.45)))
+	add_child(_ovalo(_mapa.descanso + Vector2(18, 8), Vector2(22, 10), Color(0.86, 0.74, 0.50, 0.45)))
+
+
+func _suelo(pos: Vector2, tam: Vector2, color: Color) -> void:
+	var n := _ovalo(pos, tam, color)
+	n.z_index = -1
+	add_child(n)
+
+
+func _construir_reina() -> void:
+	var r := Reina.new()
+	r.position = _mapa.reina + Vector2(-10, 8)
+	add_child(r)
+
+
 func _etiquetar_camaras() -> void:
 	_label(_mapa.reina + Vector2(-48, -40), "Cámara de la reina")
 	_label(_mapa.larvas + Vector2(-28, -36), "Larvas")
 	_label(_mapa.almacen + Vector2(-32, -36), "Almacén")
 	_label(_mapa.descanso + Vector2(-34, -36), "Descanso")
+	_label(_mapa.boca + Vector2(-18, -32), "Boca")
+	_label(_mapa.abandonada + Vector2(-42, -34), "Abandonada")
+	_label(_mapa.humeda + Vector2(-28, -34), "Húmeda")
+	_label(_mapa.ciega + Vector2(-20, -32), "Ciega")
+	_label(_mapa.silencio + Vector2(-28, -32), "Silencio")
+	_label(_mapa.fondo + Vector2(-22, -32), "Fondo")
 
 
 func _label(pos: Vector2, texto: String) -> void:

@@ -19,6 +19,11 @@ func _init() -> void:
 				fallos += 1
 			else:
 				print("ok  minimapa en mundo")
+			if _buscar_reina(nodo) == null:
+				print("FAIL mundo no tiene Reina")
+				fallos += 1
+			else:
+				print("ok  reina en su camara")
 		print("ok  ", ruta)
 		nodo.queue_free()
 	print("SMOKE ", "ok" if fallos == 0 else "failed")
@@ -30,6 +35,16 @@ func _buscar_minimapa(nodo: Node) -> Node:
 		return nodo
 	for hijo in nodo.get_children():
 		var hallado := _buscar_minimapa(hijo)
+		if hallado:
+			return hallado
+	return null
+
+
+func _buscar_reina(nodo: Node) -> Node:
+	if nodo is Reina:
+		return nodo
+	for hijo in nodo.get_children():
+		var hallado := _buscar_reina(hijo)
 		if hallado:
 			return hallado
 	return null
