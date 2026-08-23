@@ -16,6 +16,10 @@ func _init() -> void:
 	_test_descansar_restaura_energia_y_el_invierno_avanza()
 	_test_victoria_no_se_vuelve_derrota_al_llegar_el_blanco()
 	_test_minimapa_cubre_el_hormiguero_y_marca_la_hormiga()
+	_test_comida_grande_pesa_mas_que_la_chica()
+	_test_afuera_tiene_comidas_de_tres_tamanos()
+	_test_reina_esta_en_su_camara_y_es_mas_grande()
+	_test_hormiguero_tiene_diez_zonas()
 
 	print("PARTIDA %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
@@ -119,6 +123,59 @@ func _test_minimapa_cubre_el_hormiguero_y_marca_la_hormiga() -> void:
 	_ok("el punto de afuera queda dentro", marco.has_point(afuera))
 	_ok("afuera se lee arriba del hormiguero", afuera.y < en_almacen.y)
 	mini.free()
+
+
+func _test_comida_grande_pesa_mas_que_la_chica() -> void:
+	var chica := ComidaPieza.new()
+	chica.tamano = ComidaPieza.Tamano.CHICA
+	var grande := ComidaPieza.new()
+	grande.tamano = ComidaPieza.Tamano.GRANDE
+	_ok("la grande se ve mas que la chica", grande.escala() > chica.escala())
+	var liviana := Partida.new()
+	liviana.cargar(chica.costo_carga())
+	liviana.correr()
+	var pesada := Partida.new()
+	pesada.cargar(grande.costo_carga())
+	pesada.correr()
+	_ok("cargar grande gasta mas energia", pesada.energia < liviana.energia)
+	chica.free()
+	grande.free()
+
+
+func _test_afuera_tiene_comidas_de_tres_tamanos() -> void:
+	var m := HormigueroMapa.new()
+	m.generar()
+	var vistos := {}
+	for t in m.comida_tamanos:
+		vistos[t] = true
+	_ok("hay comida chica media y grande", vistos.size() == 3)
+	_ok("la semilla grande esta en la boca del nido", m.hay_comida_grande_en_la_boca())
+
+
+func _test_reina_esta_en_su_camara_y_es_mas_grande() -> void:
+	var m := HormigueroMapa.new()
+	m.generar()
+	_ok("la camara de la reina existe", m.reina != Vector2.ZERO)
+	_ok("no se gasta energia en la camara", m.esta_afuera(m.reina) == false)
+	var reina := Reina.new()
+	_ok("la reina es mas grande que una obrera", reina.largo() > 40.0)
+	reina.free()
+
+
+func _test_hormiguero_tiene_diez_zonas() -> void:
+	var m := HormigueroMapa.new()
+	m.generar()
+	var centros := m.centros_de_zona()
+	_ok("hay diez zonas", centros.size() == 10)
+	var distintas := {}
+	var todas_adentro := true
+	for c in centros:
+		distintas[Vector2i(int(c.x), int(c.y))] = true
+		if m.esta_afuera(c):
+			todas_adentro = false
+	_ok("cada zona tiene su sitio", distintas.size() == 10)
+	_ok("las zonas estan en el hormiguero", todas_adentro)
+	_ok("la boca esta bajo la superficie", m.boca.y > m.superficie_y)
 
 
 func _test_victoria_no_se_vuelve_derrota_al_llegar_el_blanco() -> void:

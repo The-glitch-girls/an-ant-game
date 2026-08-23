@@ -5,8 +5,8 @@ Un juego 2D sobre una hormiga que debe abastecer un nido fragmentado antes de qu
 ## Language
 
 **Comida**:
-El único recurso de victoria. Objeto físico: la Hormiga carga uno a la vez, en las mandíbulas. Con 5 en el Almacén antes del Invierno, se gana.
-_Avoid_: alimento, recurso, fragmento, hoja, stack
+El único recurso de victoria. Objeto físico: la Hormiga carga uno a la vez, en las mandíbulas. Hay piezas chicas, medias y grandes: las grandes pesan más y se ven más que el cuerpo. Con 5 en el Almacén antes del Invierno, se gana.
+_Avoid_: alimento, recurso, fragmento, hoja, stack, manzana, papaya
 
 **Almacén**:
 La zona del Hormiguero donde se deposita Comida. Cinco piezas aquí son la victoria.
@@ -21,7 +21,7 @@ El nido dañado. Está fragmentado y se queda así: ninguna zona se reconstruye.
 _Avoid_: colonia (como lugar), mapa, base
 
 **Zona**:
-Una parte visualmente distinta del Hormiguero.
+Una parte visualmente distinta del Hormiguero. Hoy: Cámara de la reina, Larvas, Almacén, Descanso, Boca, Abandonada, Húmeda, Ciega, Silencio, Fondo. Ninguna se reconstruye.
 _Avoid_: habitación, room, nivel, pantalla
 
 **Fragmentado**:
@@ -33,11 +33,11 @@ El único cuerpo que controla la jugadora. Una obrera de una colonia que ya no e
 _Avoid_: jugador, personaje, party, cooperativo
 
 **Reina**:
-La figura ausente. No es un objetivo ni un personaje.
+El cuerpo que queda en su Cámara. Es más grande que una Obrera. No camina, no habla, no come. No es un objetivo.
 _Avoid_: boss, NPC, objetivo final
 
 **Cámara de la reina**:
-Zona visitable y vacía. No se deposita Comida. No se repara.
+Zona visitable. Ahí está la Reina. No se deposita Comida. No se repara.
 _Avoid_: spawn, hub, trono
 
 **Derrumbada**:

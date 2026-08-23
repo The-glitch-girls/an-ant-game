@@ -16,6 +16,7 @@ const TIEMPO_DESCANSO := 10
 var energia: int = ENERGIA_INICIAL
 var comida_en_almacen: int = 0
 var lleva_comida: bool = false
+var costo_carga: int = 0
 var arrastrandose: bool = false
 var estacion: Estacion = Estacion.TARDE_HUMEDA
 var tiempo: int = 0
@@ -25,24 +26,26 @@ var resultado: Resultado = Resultado.EN_CURSO
 func correr() -> void:
 	if resultado != Resultado.EN_CURSO:
 		return
-	_gastar(COSTO_CORRER + (COSTO_CARGAR if lleva_comida else 0))
+	_gastar(COSTO_CORRER + (costo_carga if lleva_comida else 0))
 
 
 func saltar() -> void:
 	if resultado != Resultado.EN_CURSO or arrastrandose:
 		return
-	_gastar(COSTO_SALTAR + (COSTO_CARGAR if lleva_comida else 0))
+	_gastar(COSTO_SALTAR + (costo_carga if lleva_comida else 0))
 
 
-func cargar() -> bool:
+func cargar(extra: int = COSTO_CARGAR) -> bool:
 	if resultado != Resultado.EN_CURSO or lleva_comida or arrastrandose:
 		return false
 	lleva_comida = true
+	costo_carga = extra
 	return true
 
 
 func soltar() -> void:
 	lleva_comida = false
+	costo_carga = 0
 
 
 func depositar(destino: Destino) -> bool:
@@ -51,6 +54,7 @@ func depositar(destino: Destino) -> bool:
 	if destino != Destino.ALMACEN:
 		return false
 	lleva_comida = false
+	costo_carga = 0
 	comida_en_almacen += 1
 	if comida_en_almacen >= COMIDAS_PARA_VICTORIA:
 		resultado = Resultado.VICTORIA

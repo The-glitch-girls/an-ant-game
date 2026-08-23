@@ -118,6 +118,8 @@ func _geometry_suelos_solapados() -> void:
 	_ok("spawn esta mas abajo que la superficie", m.spawn.y > m.superficie_y)
 	_ok("energia se gasta en superficie", m.esta_afuera(m.comidas[0]))
 	_ok("energia no se gasta en el almacen", m.esta_afuera(m.almacen) == false)
+	_ok("afuera tiene comida de tres tamanos", m.comida_tamanos.size() == m.comidas.size())
+	_ok("la semilla grande esta en la boca", m.hay_comida_grande_en_la_boca())
 
 
 func _geometry_derrumbada_no_bloquea_el_piso() -> void:
