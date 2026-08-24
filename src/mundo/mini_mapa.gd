@@ -7,15 +7,18 @@ const MARGEN := 5
 var _mapa: HormigueroMapa
 var _nido: ImageTexture
 var _hormiga_mundo := Vector2.ZERO
+var _recorte := Rect2(0, 0, HormigueroMapa.ANCHO, HormigueroMapa.ALTO)
 
 
 func armar(mapa: HormigueroMapa) -> void:
 	_mapa = mapa
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	texture_filter = TEXTURE_FILTER_LINEAR
 	custom_minimum_size = Vector2(
 		HormigueroMapa.ANCHO * PX + MARGEN * 2,
 		HormigueroMapa.ALTO * PX + MARGEN * 2
 	)
+	_recorte = _bounds()
 	_nido = ImageTexture.create_from_image(_pintar())
 	queue_redraw()
 
@@ -28,29 +31,85 @@ func marcar(pos_mundo: Vector2) -> void:
 
 
 func mundo_a_local(pos_mundo: Vector2) -> Vector2:
-	var x := pos_mundo.x / float(HormigueroMapa.TILE)
-	var y := pos_mundo.y / float(HormigueroMapa.TILE)
-	return Vector2(MARGEN + x * PX, MARGEN + y * PX)
+	var cx := pos_mundo.x / float(HormigueroMapa.TILE)
+	var cy := pos_mundo.y / float(HormigueroMapa.TILE)
+	var w: float = HormigueroMapa.ANCHO * PX
+	var h: float = HormigueroMapa.ALTO * PX
+	return Vector2(
+		MARGEN + (cx - _recorte.position.x) / _recorte.size.x * w,
+		MARGEN + (cy - _recorte.position.y) / _recorte.size.y * h
+	)
+
+
+func _bounds() -> Rect2:
+	var minx := HormigueroMapa.ANCHO
+	var miny := HormigueroMapa.ALTO
+	var maxx := 0
+	var maxy := 0
+	for y in HormigueroMapa.ALTO:
+		for x in HormigueroMapa.ANCHO:
+			if _mapa.get_celda(x, y) == HormigueroMapa.CIELO:
+				continue
+			minx = mini(minx, x)
+			miny = mini(miny, y)
+			maxx = maxi(maxx, x)
+			maxy = maxi(maxy, y)
+	miny = maxi(0, miny - 5)
+	if maxx <= minx or maxy <= miny:
+		return Rect2(0, 0, HormigueroMapa.ANCHO, HormigueroMapa.ALTO)
+	return Rect2(minx, miny, maxx - minx + 1, maxy - miny + 1)
 
 
 func _pintar() -> Image:
-	var img := Image.create(HormigueroMapa.ANCHO * PX, HormigueroMapa.ALTO * PX, false, Image.FORMAT_RGBA8)
-	for y in HormigueroMapa.ALTO:
-		for x in HormigueroMapa.ANCHO:
-			img.fill_rect(Rect2i(x * PX, y * PX, PX, PX), _color_celda(_mapa.get_celda(x, y)))
+	var w: int = HormigueroMapa.ANCHO * PX
+	var h: int = HormigueroMapa.ALTO * PX
+	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
+	for py in h:
+		for px in w:
+			var fx: float = _recorte.position.x + (float(px) + 0.5) / float(w) * _recorte.size.x
+			var fy: float = _recorte.position.y + (float(py) + 0.5) / float(h) * _recorte.size.y
+			img.set_pixel(px, py, _sample(fx, fy))
 	return img
 
 
-func _color_celda(celda: int) -> Color:
+func _sample(fx: float, fy: float) -> Color:
+	var x0 := floori(fx)
+	var y0 := floori(fy)
+	var tx := fx - float(x0)
+	var ty := fy - float(y0)
+	var c00 := _color_en(x0, y0)
+	var c10 := _color_en(x0 + 1, y0)
+	var c01 := _color_en(x0, y0 + 1)
+	var c11 := _color_en(x0 + 1, y0 + 1)
+	return c00.lerp(c10, tx).lerp(c01.lerp(c11, tx), ty)
+
+
+func _color_en(x: int, y: int) -> Color:
+	if y < 0:
+		return Paleta.CIELO
+	if x < 0 or x >= HormigueroMapa.ANCHO or y >= HormigueroMapa.ALTO:
+		return Paleta.TIERRA_OSCURA
+	var celda: int = _mapa.get_celda(x, y)
+	if _es_pasto(x, y, celda):
+		return Paleta.PASTO
 	match celda:
 		HormigueroMapa.TUNEL:
 			return Paleta.TUNEL
 		HormigueroMapa.DERRUMBADA:
 			return Paleta.TIERRA_MANCHA
 		HormigueroMapa.CIELO:
-			return Color(0.98, 0.88, 0.72, 0.5)
+			return Paleta.CIELO
 		_:
 			return Paleta.TIERRA_OSCURA
+
+
+func _es_pasto(x: int, y: int, celda: int) -> bool:
+	if y <= 11 and celda == HormigueroMapa.TUNEL:
+		return true
+	if celda != HormigueroMapa.CIELO:
+		return false
+	var abajo: int = _mapa.get_celda(x, y + 1)
+	return abajo == HormigueroMapa.TIERRA or abajo == HormigueroMapa.TUNEL
 
 
 func _draw() -> void:
