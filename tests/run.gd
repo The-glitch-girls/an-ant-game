@@ -17,6 +17,7 @@ func _init() -> void:
 	_test_victoria_no_se_vuelve_derrota_al_llegar_el_blanco()
 	_test_reconstruir_hoja_con_tres_fragmentos()
 	_test_reconstruir_pala_con_tres_fragmentos()
+	_test_minimapa_cubre_el_hormiguero_y_marca_la_hormiga()
 
 	print("PARTIDA %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
@@ -105,6 +106,23 @@ func _test_descansar_restaura_energia_y_el_invierno_avanza() -> void:
 	p.descansar()
 	_ok("descanso llena energia", p.energia == 100)
 	_ok("invierno no se pausa", p.tiempo > tiempo_antes)
+
+
+func _test_minimapa_cubre_el_hormiguero_y_marca_la_hormiga() -> void:
+	var m := HormigueroMapa.new()
+	m.generar()
+	var mini := MiniMapa.new()
+	mini.armar(m)
+	var tam := mini.custom_minimum_size
+	_ok("minimapa cabe el nido entero", tam.x == HormigueroMapa.ANCHO * MiniMapa.PX + MiniMapa.MARGEN * 2)
+	_ok("minimapa cabe el nido de alto", tam.y == HormigueroMapa.ALTO * MiniMapa.PX + MiniMapa.MARGEN * 2)
+	var en_almacen := mini.mundo_a_local(m.almacen)
+	var afuera := mini.mundo_a_local(m.comidas[0])
+	var marco := Rect2(Vector2.ZERO, tam)
+	_ok("el punto del almacen queda dentro", marco.has_point(en_almacen))
+	_ok("el punto de afuera queda dentro", marco.has_point(afuera))
+	_ok("afuera se lee arriba del hormiguero", afuera.y < en_almacen.y)
+	mini.free()
 
 
 func _test_victoria_no_se_vuelve_derrota_al_llegar_el_blanco() -> void:

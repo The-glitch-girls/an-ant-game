@@ -3,6 +3,7 @@
 *.translation
 export_credentials.cfg
 export_credentials.encryption_key
+icon.svg.import
 
 # OS
 .DS_Store

@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3 uid="uid://colonia_mundo"]
+[gd_scene load_steps=2 format=3 uid="uid://dhp7koftcbdb6"]
 
-[ext_resource type="Script" path="res://src/mundo/mundo.gd" id="1_mundo"]
+[ext_resource type="Script" uid="uid://cgctv2lwqk0hh" path="res://src/mundo/mundo.gd" id="1_mundo"]
 
 [node name="Mundo" type="Node2D"]
 script = ExtResource("1_mundo")

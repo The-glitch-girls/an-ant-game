@@ -17,6 +17,8 @@ var _patas: Array[Node2D] = []
 var _comidas_vista: Array[Node2D] = []
 var _sensor: Area2D
 var _paso: float = 0.0
+var energia: int = 100
+var energia_maxima: int = 100
 
 
 func _ready() -> void:

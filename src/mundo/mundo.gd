@@ -20,9 +20,16 @@ var _ui_almacen: Label
 var _ui_hoja: Label
 var _ui_pala: Label
 var _ui_mensaje: Label
+var _mini_mapa: MiniMapa
 var _capas_hielo: Array[ColorRect] = []
 var _tiles: TileMapLayer
-
+# UI contadores
+var _ui_almacen: Label
+var _ui_energia_label: Label
+var _ui_energia_fondo: ColorRect
+var _ui_energia_barra: ColorRect
+var energia_maxima := 100.0
+var energia := 100.0
 
 func _ready() -> void:
 	_sfx = Sfx.new()
@@ -287,23 +294,45 @@ func _construir_ui() -> void:
 	_ui_almacen = Label.new()
 	_ui_almacen.position = Vector2(24, 20)
 	_ui_almacen.add_theme_font_size_override("font_size", 18)
-	_ui_almacen.add_theme_color_override("font_color", Paleta.HORMIGA_OSCURA)
+	_ui_almacen.add_theme_color_override("font_color", Paleta.OJO)
 	capa.add_child(_ui_almacen)
+  #Hoja
 	_ui_hoja = Label.new()
 	_ui_hoja.position = Vector2(24, 46)
 	_ui_hoja.add_theme_font_size_override("font_size", 16)
 	_ui_hoja.add_theme_color_override("font_color", Paleta.HORMIGA_OSCURA)
 	capa.add_child(_ui_hoja)
+  #Pala
 	_ui_pala = Label.new()
 	_ui_pala.position = Vector2(24, 68)
 	_ui_pala.add_theme_font_size_override("font_size", 16)
 	_ui_pala.add_theme_color_override("font_color", Paleta.HORMIGA_OSCURA)
 	capa.add_child(_ui_pala)
+  #Mensaje
 	_ui_mensaje = Label.new()
 	_ui_mensaje.position = Vector2(24, 94)
 	_ui_mensaje.add_theme_font_size_override("font_size", 15)
 	_ui_mensaje.add_theme_color_override("font_color", Paleta.HORMIGA_OSCURA)
 	capa.add_child(_ui_mensaje)
+	# Barra de energía
+	_ui_energia_label = Label.new()
+	_ui_energia_label.position = Vector2(24, 48)
+	_ui_energia_label.add_theme_font_size_override("font_size", 18)
+	_ui_energia_label.add_theme_color_override("font_color", Paleta.OJO)
+	capa.add_child(_ui_energia_label)
+	_ui_energia_fondo = ColorRect.new()
+	_ui_energia_fondo.position = Vector2(24, 75)
+	_ui_energia_fondo.size = Vector2(180, 14)
+	_ui_energia_fondo.color = Paleta.OJO
+	_ui_energia_fondo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	capa.add_child(_ui_energia_fondo)
+	_ui_energia_barra = ColorRect.new()
+	_ui_energia_barra.position = Vector2(2, 2)
+	_ui_energia_barra.size = Vector2(176, 10)
+	_ui_energia_barra.color = Paleta.HOJA_VERDE
+	_ui_energia_barra.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ui_energia_fondo.add_child(_ui_energia_barra)
+
 	for i in 4:
 		var borde := ColorRect.new()
 		borde.color = Color(0.75, 0.85, 0.95, 0.0)
@@ -323,6 +352,17 @@ func _construir_ui() -> void:
 				borde.offset_left = -22
 		capa.add_child(borde)
 		_capas_hielo.append(borde)
+	_mini_mapa = MiniMapa.new()
+	_mini_mapa.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	_mini_mapa.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_mini_mapa.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_mini_mapa.offset_right = -22
+	_mini_mapa.offset_bottom = -22
+	_mini_mapa.offset_left = -22 - HormigueroMapa.ANCHO * MiniMapa.PX - MiniMapa.MARGEN * 2
+	_mini_mapa.offset_top = -22 - HormigueroMapa.ALTO * MiniMapa.PX - MiniMapa.MARGEN * 2
+	_mini_mapa.armar(_mapa)
+	_mini_mapa.marcar(_hormiga.position)
+	capa.add_child(_mini_mapa)
 
 
 func _process(delta: float) -> void:
@@ -330,21 +370,28 @@ func _process(delta: float) -> void:
 	if p == null or _hormiga == null:
 		return
 	_hormiga.gasta_energia = _mapa.esta_afuera(_hormiga.global_position)
+	p.actualizar_carga(delta)
+	energia = p.energia
+	_actualizar_barra_energia()
+
 	_reloj += delta
 	if p.resultado == Partida.Resultado.EN_CURSO and _reloj >= SEGUNDOS_POR_TIEMPO:
 		_reloj = 0.0
 		p.transcurrir(1)
-	_actualizar_zonas()
+	_actualizar_zonas(delta)
 	_actualizar_larvas()
 	_actualizar_estacion()
-	_ui_almacen.text = "Almacén  %d / 5   Cargas  %d / %d" % [p.comida_en_almacen, p.comidas_cargadas, Partida.COMIDAS_MAXIMAS_CARGADAS]
+	_ui_almacen.text = "Almacén  %d / 5" % p.comida_en_almacen
+	_ui_energia_label.text = "Energía  %d / %d" % [p.energia, p.ENERGIA_INICIAL]
 	_ui_hoja.text = "Hoja  %d / %d%s" % [p.cantidad_fragmentos(Partida.Herramienta.HOJA), Partida.FRAGMENTOS_POR_HERRAMIENTA, "  reconstruida" if p.tiene_herramienta(Partida.Herramienta.HOJA) else ""]
 	_ui_pala.text = "Pala  %d / %d%s" % [p.cantidad_fragmentos(Partida.Herramienta.PALA), Partida.FRAGMENTOS_POR_HERRAMIENTA, "  reconstruida" if p.tiene_herramienta(Partida.Herramienta.PALA) else ""]
+	if _mini_mapa:
+		_mini_mapa.marcar(_hormiga.global_position)
 	if p.resultado != Partida.Resultado.EN_CURSO:
 		_mostrar_final()
 
 
-func _actualizar_zonas() -> void:
+func _actualizar_zonas(delta: float) -> void:
 	var p: Partida = Juego.partida
 	if p.arrastrandose and _hormiga.tiene_comida_vista():
 		_hormiga.soltar_vista()
@@ -366,6 +413,7 @@ func _actualizar_zonas() -> void:
 			_en_descanso = true
 			p.descansar()
 			_sfx.tocar("descanso")
+		p.actualizar_descanso(delta)
 	else:
 		_en_descanso = false
 	if _reconstruccion_area.overlaps_body(_hormiga) and Input.is_action_just_pressed("reconstruir"):
@@ -465,6 +513,8 @@ func _mostrar_final() -> void:
 	if _final_mostrado:
 		return
 	_final_mostrado = true
+	if _mini_mapa:
+		_mini_mapa.visible = false
 	var capa := CanvasLayer.new()
 	add_child(capa)
 	var fondo := ColorRect.new()
@@ -521,3 +571,7 @@ func _pixel() -> Texture2D:
 	var img := Image.create(2, 2, false, Image.FORMAT_RGBA8)
 	img.fill(Color.WHITE)
 	return ImageTexture.create_from_image(img)
+	
+func _actualizar_barra_energia() -> void:
+	var porcentaje: float = clampf(energia / energia_maxima, 0.0, 1.0)
+	_ui_energia_barra.size.x = 176.0 * porcentaje
