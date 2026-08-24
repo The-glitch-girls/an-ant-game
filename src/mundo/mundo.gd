@@ -44,11 +44,8 @@ func _ready() -> void:
 
 
 func _pintar_cielo() -> void:
-	var cielo := ColorRect.new()
-	cielo.color = Paleta.CIELO
-	cielo.position = Vector2(-400, -900)
-	cielo.size = Vector2(HormigueroMapa.ANCHO * HormigueroMapa.TILE + 800, 1200)
-	cielo.z_index = -8
+	var cielo := FondoCielo.new()
+	cielo.armar()
 	add_child(cielo)
 
 

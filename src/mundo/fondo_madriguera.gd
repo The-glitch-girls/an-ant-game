@@ -1,8 +1,8 @@
 class_name FondoMadriguera
 extends Node2D
 
-const RES := 2
-const PASES_BLUR := 2
+const BAJA := 2
+const PASES_BLUR := 3
 
 
 func armar(mapa: HormigueroMapa) -> void:
@@ -13,49 +13,80 @@ func armar(mapa: HormigueroMapa) -> void:
 
 
 func _pintar_suelo(mapa: HormigueroMapa) -> void:
-	var w: int = HormigueroMapa.ANCHO * RES
-	var h: int = HormigueroMapa.ALTO * RES
-	var hueco := _raster(mapa, w, h, func(c: int, _x: int, _y: int) -> bool:
+	var res: int = HormigueroMapa.TILE / Paleta.PX_ARTE
+	var w: int = HormigueroMapa.ANCHO * res
+	var h: int = HormigueroMapa.ALTO * res
+	var wb: int = HormigueroMapa.ANCHO * BAJA
+	var hb: int = HormigueroMapa.ALTO * BAJA
+	var hueco := _raster(mapa, wb, hb, BAJA, func(c: int, _x: int, _y: int) -> bool:
 		return c == HormigueroMapa.TUNEL or c == HormigueroMapa.CIELO
 	)
-	var aire := _raster(mapa, w, h, func(c: int, _x: int, _y: int) -> bool:
+	var aire := _raster(mapa, wb, hb, BAJA, func(c: int, _x: int, _y: int) -> bool:
 		return c == HormigueroMapa.CIELO
 	)
-	var tapado := _raster(mapa, w, h, func(c: int, _x: int, _y: int) -> bool:
+	var tapado := _raster(mapa, wb, hb, BAJA, func(c: int, _x: int, _y: int) -> bool:
 		return c == HormigueroMapa.DERRUMBADA
 	)
-	var afuera := _raster(mapa, w, h, func(c: int, _x: int, y: int) -> bool:
-		return c == HormigueroMapa.TUNEL and y / RES <= 11
+	var afuera := _raster(mapa, wb, hb, BAJA, func(c: int, _x: int, y: int) -> bool:
+		return c == HormigueroMapa.TUNEL and y / BAJA <= 11
 	)
 	for _i in PASES_BLUR:
-		hueco = _blur(hueco, w, h)
-		aire = _blur(aire, w, h)
-		tapado = _blur(tapado, w, h)
-		afuera = _blur(afuera, w, h)
+		hueco = _blur(hueco, wb, hb)
+		aire = _blur(aire, wb, hb)
+		tapado = _blur(tapado, wb, hb)
+		afuera = _blur(afuera, wb, hb)
 
+	var ochre := Color(0.78, 0.56, 0.34)
+	var terracota := Paleta.TIERRA
+	var terracota_sombra := Paleta.TIERRA_OSCURA
+	var piso_luz := Color(0.90, 0.72, 0.50)
+	var oliva := Paleta.PASTO
+	var oliva_luz := Color(0.58, 0.66, 0.32)
+	var oliva_sombra := Color(0.36, 0.46, 0.20)
 	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
 	for y in h:
 		for x in w:
-			var i: int = y * w + x
-			img.set_pixel(x, y, Color(hueco[i], aire[i], tapado[i], afuera[i]))
+			var fx: float = (float(x) + 0.5) / float(w) * float(wb)
+			var fy: float = (float(y) + 0.5) / float(h) * float(hb)
+			var v_aire := _sample(aire, wb, hb, fx, fy)
+			if v_aire > 0.60:
+				img.set_pixel(x, y, Color(0, 0, 0, 0))
+				continue
+			var v_hueco := _sample(hueco, wb, hb, fx, fy)
+			var v_tapado := _sample(tapado, wb, hb, fx, fy)
+			var v_afuera := _sample(afuera, wb, hb, fx, fy)
+			var n := _hash(Vector2(x / 5, y / 5).floor())
+			var col: Color
+			if v_afuera > 0.40:
+				var g := _hash(Vector2(x / 3, y / 2).floor())
+				col = oliva_sombra if g < 0.16 else (oliva_luz if g > 0.84 else oliva)
+			elif v_tapado > 0.38:
+				col = Paleta.TIERRA_MANCHA.lerp(terracota_sombra, 1.0 if n >= 0.5 else 0.0)
+			elif v_hueco > 0.40:
+				var centro: float = smoothstep(0.42, 0.90, v_hueco)
+				col = Paleta.TUNEL_OSCURO.lerp(piso_luz, centro)
+				if n > 0.93:
+					col = col.lerp(ochre, 0.35)
+			elif v_hueco > 0.20:
+				col = Paleta.LABIO.lerp(terracota, 0.35)
+			else:
+				col = terracota
+				if n > 0.90:
+					col = ochre
+				elif n < 0.08:
+					col = terracota_sombra
+			img.set_pixel(x, y, col)
 
 	var sprite := Sprite2D.new()
 	sprite.centered = false
 	sprite.texture = ImageTexture.create_from_image(img)
-	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	sprite.scale = Vector2(HormigueroMapa.TILE / float(RES), HormigueroMapa.TILE / float(RES))
-	var mat := ShaderMaterial.new()
-	mat.shader = load("res://src/mundo/fondo_madriguera.gdshader")
-	mat.set_shader_parameter("tierra", Paleta.TIERRA)
-	mat.set_shader_parameter("labio", Paleta.LABIO)
-	mat.set_shader_parameter("arcilla", Paleta.TUNEL)
-	mat.set_shader_parameter("arcilla_sombra", Paleta.TUNEL_OSCURO)
-	mat.set_shader_parameter("cielo", Paleta.CIELO)
-	mat.set_shader_parameter("derrumbe", Paleta.TIERRA_MANCHA)
-	mat.set_shader_parameter("pasto", Paleta.PASTO)
-	mat.set_shader_parameter("mapa_celdas", Vector2(HormigueroMapa.ANCHO, HormigueroMapa.ALTO))
-	sprite.material = mat
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	sprite.scale = Vector2(Paleta.PX_ARTE, Paleta.PX_ARTE)
 	add_child(sprite)
+
+
+func _hash(p: Vector2) -> float:
+	return fposmod(sin(p.dot(Vector2(127.1, 311.7))) * 43758.5453, 1.0)
 
 
 func _esparcir_detalles(mapa: HormigueroMapa) -> void:
@@ -64,7 +95,7 @@ func _esparcir_detalles(mapa: HormigueroMapa) -> void:
 	for y in HormigueroMapa.ALTO:
 		for x in HormigueroMapa.ANCHO:
 			var c: int = mapa.get_celda(x, y)
-			if c == HormigueroMapa.TIERRA and _toca_tunel(mapa, x, y) and rng.randf() < 0.018:
+			if c == HormigueroMapa.TIERRA and _toca_tunel(mapa, x, y) and rng.randf() < 0.02:
 				_guijarro(mapa.mundo(x, y) + Vector2(rng.randf_range(-6, 6), rng.randf_range(-6, 6)), rng)
 
 
@@ -77,19 +108,20 @@ func _toca_tunel(mapa: HormigueroMapa, x: int, y: int) -> bool:
 
 
 func _guijarro(pos: Vector2, rng: RandomNumberGenerator) -> void:
-	var p := Polygon2D.new()
-	p.position = pos
-	p.color = Paleta.GUIJARRO.lerp(Paleta.TIERRA, rng.randf() * 0.5)
-	p.modulate.a = 0.7
-	p.z_index = 1
-	var rx := rng.randf_range(2.4, 4.2)
-	var ry := rng.randf_range(1.8, 3.0)
-	var pts := PackedVector2Array()
-	for i in 7:
-		var a := TAU * i / 7.0 + rng.randf() * 0.3
-		pts.append(Vector2(cos(a) * rx, sin(a) * ry))
-	p.polygon = pts
-	add_child(p)
+	var img := Image.create(5, 4, false, Image.FORMAT_RGBA8)
+	var base := Color(0.72, 0.54, 0.38).lerp(Paleta.TIERRA, rng.randf() * 0.3)
+	var luz := base.lightened(0.18)
+	var sombra := base.darkened(0.16)
+	var form := [
+		Vector2i(1, 0), Vector2i(2, 0), Vector2i(3, 0),
+		Vector2i(0, 1), Vector2i(1, 1), Vector2i(2, 1), Vector2i(3, 1), Vector2i(4, 1),
+		Vector2i(1, 2), Vector2i(2, 2), Vector2i(3, 2),
+		Vector2i(2, 3),
+	]
+	for p in form:
+		var col := luz if p.y == 0 else (sombra if p.y >= 2 else base)
+		img.set_pixel(p.x, p.y, col)
+	_sprite_pixel(img, pos, 1)
 
 
 func _pintar_pasto(mapa: HormigueroMapa) -> void:
@@ -98,30 +130,59 @@ func _pintar_pasto(mapa: HormigueroMapa) -> void:
 	for x in range(8, 64):
 		if mapa.get_celda(x, 10) != HormigueroMapa.TUNEL:
 			continue
-		if rng.randf() > 0.28:
+		if rng.randf() > 0.34:
 			continue
-		var mata := Polygon2D.new()
-		mata.position = mapa.mundo(x, 9) + Vector2(rng.randf_range(-8, 8), rng.randf_range(-6, 2))
-		mata.color = Paleta.PASTO.lerp(Color(0.30, 0.48, 0.20), rng.randf() * 0.4)
-		mata.z_index = 1
-		var w := rng.randf_range(5.0, 9.0)
-		var h := rng.randf_range(4.0, 7.5)
-		mata.polygon = PackedVector2Array([
-			Vector2(-w * 0.5, 0),
-			Vector2(-w * 0.15, -h),
-			Vector2(0, -h * 0.55),
-			Vector2(w * 0.2, -h * 0.9),
-			Vector2(w * 0.5, 0),
-		])
-		add_child(mata)
+		var pos := mapa.mundo(x, 9) + Vector2(rng.randf_range(-8, 8), rng.randf_range(-3, 2))
+		_mata(pos, rng)
+		if rng.randf() < 0.28:
+			_flor(pos + Vector2(rng.randf_range(-5, 5), -3), rng)
 
 
-func _raster(mapa: HormigueroMapa, w: int, h: int, pred: Callable) -> PackedFloat32Array:
+func _flor(pos: Vector2, rng: RandomNumberGenerator) -> void:
+	var img := Image.create(3, 3, false, Image.FORMAT_RGBA8)
+	var petal := Paleta.TERRACOTA if rng.randf() > 0.5 else Paleta.AMBAR
+	img.set_pixel(1, 0, petal.lightened(0.12))
+	img.set_pixel(0, 1, petal)
+	img.set_pixel(2, 1, petal)
+	img.set_pixel(1, 2, petal.darkened(0.08))
+	img.set_pixel(1, 1, Paleta.AMBAR)
+	_sprite_pixel(img, pos, 2)
+
+
+func _mata(pos: Vector2, rng: RandomNumberGenerator) -> void:
+	var img := Image.create(7, 5, false, Image.FORMAT_RGBA8)
+	var base := Paleta.PASTO.lerp(Color(0.40, 0.52, 0.22), rng.randf() * 0.3)
+	var luz := base.lerp(Color(0.62, 0.70, 0.34), 0.55)
+	var sombra := base.darkened(0.14)
+	var form := [
+		Vector2i(2, 0), Vector2i(3, 0), Vector2i(4, 0),
+		Vector2i(1, 1), Vector2i(2, 1), Vector2i(3, 1), Vector2i(4, 1), Vector2i(5, 1),
+		Vector2i(0, 2), Vector2i(1, 2), Vector2i(2, 2), Vector2i(3, 2), Vector2i(4, 2), Vector2i(5, 2), Vector2i(6, 2),
+		Vector2i(1, 3), Vector2i(2, 3), Vector2i(3, 3), Vector2i(4, 3), Vector2i(5, 3),
+		Vector2i(2, 4), Vector2i(3, 4), Vector2i(4, 4),
+	]
+	for p in form:
+		var col := luz if p.y == 0 else (sombra if p.y >= 3 else base)
+		img.set_pixel(p.x, p.y, col)
+	_sprite_pixel(img, pos, 1)
+
+
+func _sprite_pixel(img: Image, pos: Vector2, z: int) -> void:
+	var s := Sprite2D.new()
+	s.texture = ImageTexture.create_from_image(img)
+	s.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	s.scale = Vector2(Paleta.PX_ARTE, Paleta.PX_ARTE)
+	s.position = pos
+	s.z_index = z
+	add_child(s)
+
+
+func _raster(mapa: HormigueroMapa, w: int, h: int, res: int, pred: Callable) -> PackedFloat32Array:
 	var g := PackedFloat32Array()
 	g.resize(w * h)
 	for y in h:
 		for x in w:
-			var c: int = mapa.get_celda(int(x / RES), int(y / RES))
+			var c: int = mapa.get_celda(int(x / res), int(y / res))
 			g[y * w + x] = 1.0 if pred.call(c, x, y) else 0.0
 	return g
 
@@ -139,3 +200,15 @@ func _blur(src: PackedFloat32Array, w: int, h: int) -> PackedFloat32Array:
 					acc += src[yy * w + xx]
 			dst[y * w + x] = acc / 9.0
 	return dst
+
+
+func _sample(g: PackedFloat32Array, w: int, h: int, fx: float, fy: float) -> float:
+	var x0 := clampi(int(fx), 0, w - 1)
+	var y0 := clampi(int(fy), 0, h - 1)
+	var x1 := clampi(x0 + 1, 0, w - 1)
+	var y1 := clampi(y0 + 1, 0, h - 1)
+	var tx := fx - float(x0)
+	var ty := fy - float(y0)
+	var a: float = lerpf(g[y0 * w + x0], g[y0 * w + x1], tx)
+	var b: float = lerpf(g[y1 * w + x0], g[y1 * w + x1], tx)
+	return lerpf(a, b, ty)
