@@ -11,6 +11,7 @@ var _larvas: Array[Node2D] = []
 var _almacen_area: Area2D
 var _reina_area: Area2D
 var _descanso_area: Area2D
+var _construccion_area: Area2D
 var _en_descanso: bool = false
 var _reloj: float = 0.0
 var _final_mostrado: bool = false
@@ -22,10 +23,14 @@ var _camara: Camera2D
 var _intro: bool = true
 var energia_maxima := 100.0
 var energia := 100.0
+var _fragmentos_texturas: Dictionary = {}
+var _herramientas_texturas: Dictionary = {}
+var _efecto_reconstruccion: GPUParticles2D
 
 func _ready() -> void:
 	_sfx = Sfx.new()
 	add_child(_sfx)
+	_cargar_texturas_fragmentos()
 	_mapa = HormigueroMapa.new()
 	_mapa.generar()
 	_pintar_cielo()
@@ -37,6 +42,8 @@ func _ready() -> void:
 	_construir_hormiga()
 	_construir_obreras()
 	_construir_comidas()
+	_construir_fragmentos()
+	_actualizar_ui_herramientas()
 	_construir_larvas()
 	_construir_clima()
 	_construir_ui()
@@ -140,6 +147,7 @@ func _etiquetar_camaras() -> void:
 	_label(_mapa.descanso + Vector2(-34, -36), "Descanso")
 	_label(_mapa.abandonada + Vector2(-40, -36), "Abandonada")
 	_label(_mapa.humeda + Vector2(-28, -36), "Húmeda")
+	_label(_mapa.construccion + Vector2(-70, -36), "Zona de reconstrucción")
 	_label(_mapa.fondo + Vector2(-22, -36), "Fondo")
 
 
@@ -157,6 +165,7 @@ func _construir_zonas() -> void:
 	_reina_area = _zona(_mapa.reina, t, "reina")
 	_almacen_area = _zona(_mapa.almacen, t, "almacen")
 	_descanso_area = _zona(_mapa.descanso, t, "descanso")
+	_construccion_area = _zona(_mapa.construccion, t, "construccion")
 	_zona(_mapa.larvas, t, "larvas")
 
 
@@ -212,6 +221,38 @@ func _construir_comidas() -> void:
 		var c := ComidaPieza.new()
 		c.position = p
 		add_child(c)
+
+
+func _cargar_texturas_fragmentos() -> void:
+	_fragmentos_texturas[Partida.Fragmento.PALA_MANGO] = load("res://assets/herramientas/fragmento_madera.png")
+	_fragmentos_texturas[Partida.Fragmento.PALA_CABEZAL] = load("res://assets/herramientas/fragmento_metal.png")
+	_fragmentos_texturas[Partida.Fragmento.PALA_RESTO] = load("res://assets/herramientas/fragmento_madera.png")
+	_fragmentos_texturas[Partida.Fragmento.RAMA_PUNTA] = load("res://assets/herramientas/fragmento_madera.png")
+	_fragmentos_texturas[Partida.Fragmento.RAMA_CUERPO] = load("res://assets/herramientas/fragmento_madera.png")
+	_fragmentos_texturas[Partida.Fragmento.RAMA_BASE] = load("res://assets/herramientas/fragmento_madera.png")
+	
+	_herramientas_texturas[Partida.Herramienta.PALA] = load("res://assets/herramientas/pala_completa.png")
+	_herramientas_texturas[Partida.Herramienta.RAMA] = load("res://assets/herramientas/rama_completa.png")
+
+
+func _construir_fragmentos() -> void:
+	var fragmentos_data = [
+		[Partida.Fragmento.PALA_MANGO, _mapa.mundo(12, 10)],
+		[Partida.Fragmento.PALA_CABEZAL, _mapa.mundo(22, 10)],
+		[Partida.Fragmento.PALA_RESTO, _mapa.mundo(32, 10)],
+		[Partida.Fragmento.RAMA_PUNTA, _mapa.mundo(42, 10)],
+		[Partida.Fragmento.RAMA_CUERPO, _mapa.mundo(52, 10)],
+		[Partida.Fragmento.RAMA_BASE, _mapa.mundo(62, 10)],
+	]
+	
+	for f in fragmentos_data:
+		var tipo: Partida.Fragmento = f[0]
+		var pos: Vector2 = f[1]
+		var tex: Texture2D = _fragmentos_texturas.get(tipo)
+		if tex != null:
+			var fragmento := FragmentoPieza.new(tipo, tex)
+			fragmento.position = pos
+			add_child(fragmento)
 
 
 func _construir_larvas() -> void:
@@ -345,6 +386,9 @@ func _actualizar_zonas(delta: float) -> void:
 			_mostrar_comida_en_almacen(p.comida_en_almacen)
 	if _reina_area.overlaps_body(_hormiga) and p.lleva_comida:
 		p.depositar(Partida.Destino.CAMARA_REINA)
+	if _construccion_area.overlaps_body(_hormiga):
+		if Input.is_key_pressed(KEY_U):
+			_intentar_reconstruir()
 	if _descanso_area.overlaps_body(_hormiga):
 		if not _en_descanso:
 			_en_descanso = true
@@ -376,6 +420,64 @@ func _actualizar_larvas() -> void:
 		l.modulate = Color.WHITE if viva else Color(0.6, 0.5, 0.4, 0.75)
 		var base: float = _mapa.larvas.y + 8.0
 		l.position.y = base + sin(Time.get_ticks_msec() * (0.008 + n * 0.002) + i) * (2.2 if viva else 0.3)
+
+
+func _intentar_reconstruir() -> void:
+	var p: Partida = Juego.partida
+	if p == null:
+		return
+	
+	for herramienta in [Partida.Herramienta.PALA, Partida.Herramienta.RAMA]:
+		if p.tiene_fragmentos_para(herramienta) and not p.tiene_herramienta(herramienta):
+			if p.reconstruir_herramienta(herramienta):
+				_mostrar_efecto_reconstruccion()
+				_mostrar_herramienta_reconstruida(herramienta)
+				_sfx.tocar("depositar")
+				break
+
+
+func _mostrar_efecto_reconstruccion() -> void:
+	if _efecto_reconstruccion == null:
+		_efecto_reconstruccion = GPUParticles2D.new()
+		_efecto_reconstruccion.amount = 30
+		_efecto_reconstruccion.lifetime = 1.5
+		_efecto_reconstruccion.texture = _pixel()
+		var mat := ParticleProcessMaterial.new()
+		mat.gravity = Vector3(0, -50, 0)
+		mat.scale_min = 0.5
+		mat.scale_max = 1.5
+		mat.color = Color(1.0, 0.8, 0.4, 0.8)
+		_efecto_reconstruccion.process_material = mat
+		add_child(_efecto_reconstruccion)
+	
+	_efecto_reconstruccion.position = _hormiga.global_position
+	_efecto_reconstruccion.restart()
+
+
+func _mostrar_herramienta_reconstruida(herramienta: Partida.Herramienta) -> void:
+	var tex: Texture2D = _herramientas_texturas.get(herramienta)
+	if tex == null:
+		return
+	
+	var sprite := Sprite2D.new()
+	sprite.texture = tex
+	sprite.scale = Vector2(0.2, 0.2)
+	sprite.position = _mapa.construccion + Vector2(0, -20)
+	sprite.z_index = 5
+	add_child(sprite)
+	
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(sprite, "scale", Vector2(0.3, 0.3), 0.3)
+	tw.tween_property(sprite, "modulate:a", 1.0, 0.3)
+	tw.chain().tween_callback(sprite.queue_free)
+	
+	_actualizar_ui_herramientas()
+
+
+func _actualizar_ui_herramientas() -> void:
+	if _hud != null:
+		_hud.pintar(energia, energia_maxima, Juego.partida.comida_en_almacen)
 
 
 func _actualizar_estacion() -> void:
