@@ -1,14 +1,16 @@
 class_name Paleta
 extends Object
 
-const TIERRA := Color(0.52, 0.36, 0.22)
-const TIERRA_OSCURA := Color(0.38, 0.24, 0.14)
-const TIERRA_MANCHA := Color(0.46, 0.30, 0.18)
-const LABIO := Color(0.40, 0.26, 0.16)
-const TUNEL := Color(0.60, 0.42, 0.26)
-const TUNEL_OSCURO := Color(0.50, 0.34, 0.20)
-const CIELO := Color(0.62, 0.80, 0.94)
-const PASTO := Color(0.40, 0.58, 0.28)
+const PX_ARTE := 2
+
+const TIERRA := Color(0.64, 0.42, 0.28)
+const TIERRA_OSCURA := Color(0.48, 0.30, 0.20)
+const TIERRA_MANCHA := Color(0.54, 0.36, 0.24)
+const LABIO := Color(0.56, 0.36, 0.24)
+const TUNEL := Color(0.84, 0.64, 0.42)
+const TUNEL_OSCURO := Color(0.72, 0.52, 0.34)
+const CIELO := Color(0.70, 0.78, 0.86)
+const PASTO := Color(0.46, 0.56, 0.28)
 const HORMIGA := Color(0.78, 0.38, 0.16)
 const HORMIGA_OSCURA := Color(0.55, 0.22, 0.10)
 const HORMIGA_PANZA := Color(0.88, 0.50, 0.24)
