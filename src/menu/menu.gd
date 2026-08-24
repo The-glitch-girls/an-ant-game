@@ -1,5 +1,6 @@
 extends Control
 
+
 const TIERRA := Color(0.725, 0.478, 0.275)
 const TIERRA_CLARA := Color(0.78, 0.55, 0.32, 0.18)
 const AMBAR := Color(0.83, 0.58, 0.22)
@@ -20,10 +21,11 @@ func _armar() -> void:
 	# FONDO
 	# --------------------------------------------------
 	var fondo := ColorRect.new()
-	fondo.color = TIERRA
+	fondo.color = Paleta.TIERRA
 	fondo.set_anchors_preset(Control.PRESET_FULL_RECT)
 	fondo.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(fondo)
+
 
 	var frio := ColorRect.new()
 	frio.color = TIERRA_CLARA
@@ -31,6 +33,19 @@ func _armar() -> void:
 	frio.set_anchors_preset(Control.PRESET_FULL_RECT)
 	frio.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(frio)
+
+	var lavado := ColorRect.new()
+	lavado.color = Color(1.0, 0.84, 0.56, 0.18)
+	lavado.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(lavado)
+
+	#var tarjeta := UiCozzy.tarjeta()
+	#tarjeta.set_anchors_preset(Control.PRESET_CENTER)
+	#tarjeta.offset_left = -230
+	#tarjeta.offset_right = 230
+	#tarjeta.offset_top = -210
+	#tarjeta.offset_bottom = 230
+	#add_child(tarjeta)
 
 	# --------------------------------------------------
 	# CONTENIDO
@@ -49,6 +64,8 @@ func _armar() -> void:
 	caja.size = Vector2(900, 400)
 	caja.add_theme_constant_override("separation", 14)
 	add_child(caja)
+	#tarjeta.add_child(caja)
+
 
 	# --------------------------------------------------
 	# TITULO
@@ -56,6 +73,7 @@ func _armar() -> void:
 	var titulo := Label.new()
 	titulo.text = "HORMIGA EN CONSTRUCCIÓN"
 	titulo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
 	titulo.add_theme_font_override("font", FUENTE_COINY)	
 	titulo.add_theme_font_size_override("font_size", 64)
 	titulo.add_theme_color_override("font_color", HUESO)
@@ -113,6 +131,10 @@ func _armar() -> void:
 	espacio.custom_minimum_size = Vector2(0, 10)
 	caja.add_child(espacio)
 
+	UiCozzy.estilar_texto(titulo, 42)
+	caja.add_child(titulo)
+
+
 	# --------------------------------------------------
 	# BOTONES
 	# --------------------------------------------------
@@ -124,6 +146,7 @@ func _armar() -> void:
 func _boton(texto: String, cb: Callable) -> Button:
 	var b := Button.new()
 	b.text = texto
+
 	b.custom_minimum_size = Vector2(440, 48)
 	b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	b.add_theme_font_override("font", FUENTE_COINY)
@@ -157,6 +180,9 @@ func _boton(texto: String, cb: Callable) -> Button:
 	b.add_theme_stylebox_override("hover", hover)
 	b.add_theme_stylebox_override("pressed", hover)
 	
+
+	UiCozzy.estilar_boton(b)
+
 	b.pressed.connect(cb)
 	return b
 

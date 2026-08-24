@@ -17,11 +17,9 @@ var _final_mostrado: bool = false
 var _mini_mapa: MiniMapa
 var _capas_hielo: Array[ColorRect] = []
 var _tiles: TileMapLayer
-# UI contadores
-var _ui_almacen: Label
-var _ui_energia_label: Label
-var _ui_energia_fondo: ColorRect
-var _ui_energia_barra: ColorRect
+var _hud: Hud
+var _camara: Camera2D
+var _intro: bool = true
 var energia_maxima := 100.0
 var energia := 100.0
 
@@ -31,6 +29,7 @@ func _ready() -> void:
 	_mapa = HormigueroMapa.new()
 	_mapa.generar()
 	_pintar_cielo()
+	_construir_fondo()
 	_construir_tiles()
 	_polvo_derrumbada()
 	_etiquetar_camaras()
@@ -41,21 +40,29 @@ func _ready() -> void:
 	_construir_larvas()
 	_construir_clima()
 	_construir_ui()
+	_bajar_al_nido()
 
 
 func _pintar_cielo() -> void:
 	var cielo := ColorRect.new()
 	cielo.color = Paleta.CIELO
-	cielo.position = Vector2(-400, -600)
-	cielo.size = Vector2(HormigueroMapa.ANCHO * HormigueroMapa.TILE + 800, 900)
+	cielo.position = Vector2(-400, -900)
+	cielo.size = Vector2(HormigueroMapa.ANCHO * HormigueroMapa.TILE + 800, 1200)
 	cielo.z_index = -8
 	add_child(cielo)
+
+
+func _construir_fondo() -> void:
+	var fondo := FondoMadriguera.new()
+	fondo.armar(_mapa)
+	add_child(fondo)
 
 
 func _construir_tiles() -> void:
 	_tiles = TileMapLayer.new()
 	_tiles.tile_set = _hacer_tileset()
 	_tiles.collision_enabled = true
+	_tiles.self_modulate = Color(1, 1, 1, 0)
 	add_child(_tiles)
 	for y in HormigueroMapa.ALTO:
 		for x in HormigueroMapa.ANCHO:
@@ -77,10 +84,7 @@ func _hacer_tileset() -> TileSet:
 	ts.set_physics_layer_collision_layer(0, 1)
 	ts.set_physics_layer_collision_mask(0, 0)
 	var img := Image.create(HormigueroMapa.TILE * 4, HormigueroMapa.TILE, false, Image.FORMAT_RGBA8)
-	_rellenar_tierra(img, Rect2i(0, 0, HormigueroMapa.TILE, HormigueroMapa.TILE), Paleta.TIERRA, Paleta.TIERRA_MANCHA)
-	_rellenar_tierra(img, Rect2i(HormigueroMapa.TILE, 0, HormigueroMapa.TILE, HormigueroMapa.TILE), Paleta.TUNEL, Paleta.TUNEL_OSCURO)
-	_rellenar_tierra(img, Rect2i(HormigueroMapa.TILE * 2, 0, HormigueroMapa.TILE, HormigueroMapa.TILE), Paleta.TIERRA_OSCURA, Paleta.TIERRA_MANCHA)
-	img.fill_rect(Rect2i(HormigueroMapa.TILE * 3, 0, HormigueroMapa.TILE, HormigueroMapa.TILE), Color(0, 0, 0, 0))
+	img.fill(Color(0, 0, 0, 0))
 	var source := TileSetAtlasSource.new()
 	source.texture = ImageTexture.create_from_image(img)
 	source.texture_region_size = Vector2i(HormigueroMapa.TILE, HormigueroMapa.TILE)
@@ -98,17 +102,6 @@ func _hacer_tileset() -> TileSet:
 		td.add_collision_polygon(0)
 		td.set_collision_polygon_points(0, 0, box)
 	return ts
-
-
-func _rellenar_tierra(img: Image, rect: Rect2i, base: Color, mancha: Color) -> void:
-	for y in rect.size.y:
-		for x in rect.size.x:
-			var c := base
-			if (x * 13 + y * 7 + rect.position.x) % 11 == 0:
-				c = mancha
-			if (x + y * 3) % 17 == 0:
-				c = c.darkened(0.08)
-			img.set_pixel(rect.position.x + x, rect.position.y + y, c)
 
 
 func _polvo_derrumbada() -> void:
@@ -145,6 +138,9 @@ func _etiquetar_camaras() -> void:
 	_label(_mapa.larvas + Vector2(-28, -36), "Larvas")
 	_label(_mapa.almacen + Vector2(-32, -36), "Almacén")
 	_label(_mapa.descanso + Vector2(-34, -36), "Descanso")
+	_label(_mapa.abandonada + Vector2(-40, -36), "Abandonada")
+	_label(_mapa.humeda + Vector2(-28, -36), "Húmeda")
+	_label(_mapa.fondo + Vector2(-22, -36), "Fondo")
 
 
 func _label(pos: Vector2, texto: String) -> void:
@@ -152,7 +148,7 @@ func _label(pos: Vector2, texto: String) -> void:
 	lab.text = texto
 	lab.position = pos
 	lab.add_theme_font_size_override("font_size", 13)
-	lab.add_theme_color_override("font_color", Color(0.35, 0.2, 0.1, 0.55))
+	lab.add_theme_color_override("font_color", Color(0.42, 0.26, 0.14, 0.62))
 	add_child(lab)
 
 
@@ -188,16 +184,18 @@ func _construir_hormiga() -> void:
 	_hormiga.intento_mover.connect(func() -> void:
 		_sfx.tocar("paso")
 	)
-	var cam := Camera2D.new()
-	cam.position_smoothing_enabled = true
-	cam.position_smoothing_speed = 5.5
-	cam.zoom = Vector2(2.45, 2.45)
-	cam.limit_left = 0
-	cam.limit_top = -80
-	cam.limit_right = HormigueroMapa.ANCHO * HormigueroMapa.TILE
-	cam.limit_bottom = HormigueroMapa.ALTO * HormigueroMapa.TILE
-	_hormiga.add_child(cam)
-	cam.make_current()
+	_camara = Camera2D.new()
+	_camara.position_smoothing_enabled = false
+	_camara.zoom = Vector2(1.15, 1.15)
+	_camara.limit_left = 0
+	_camara.limit_top = -320
+	_camara.limit_right = HormigueroMapa.ANCHO * HormigueroMapa.TILE
+	_camara.limit_bottom = HormigueroMapa.ALTO * HormigueroMapa.TILE
+	var mira := Vector2(HormigueroMapa.ANCHO * HormigueroMapa.TILE * 0.5, _mapa.superficie_y - 110)
+	_camara.offset = mira - _hormiga.position
+	_hormiga.add_child(_camara)
+	_camara.make_current()
+	_hormiga.bloqueada = true
 
 
 func _construir_obreras() -> void:
@@ -223,7 +221,7 @@ func _construir_larvas() -> void:
 
 func _construir_clima() -> void:
 	_modulate = CanvasModulate.new()
-	_modulate.color = Color(1.0, 0.95, 0.88)
+	_modulate.color = Color(1.0, 0.97, 0.88)
 	add_child(_modulate)
 	_viento_nieve = GPUParticles2D.new()
 	_viento_nieve.amount = 40
@@ -247,29 +245,9 @@ func _construir_clima() -> void:
 func _construir_ui() -> void:
 	var capa := CanvasLayer.new()
 	add_child(capa)
-	_ui_almacen = Label.new()
-	_ui_almacen.position = Vector2(24, 20)
-	_ui_almacen.add_theme_font_size_override("font_size", 18)
-	_ui_almacen.add_theme_color_override("font_color", Paleta.OJO)
-	capa.add_child(_ui_almacen)
-	# Barra de energía
-	_ui_energia_label = Label.new()
-	_ui_energia_label.position = Vector2(24, 48)
-	_ui_energia_label.add_theme_font_size_override("font_size", 18)
-	_ui_energia_label.add_theme_color_override("font_color", Paleta.OJO)
-	capa.add_child(_ui_energia_label)
-	_ui_energia_fondo = ColorRect.new()
-	_ui_energia_fondo.position = Vector2(24, 75)
-	_ui_energia_fondo.size = Vector2(180, 14)
-	_ui_energia_fondo.color = Paleta.OJO
-	_ui_energia_fondo.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	capa.add_child(_ui_energia_fondo)
-	_ui_energia_barra = ColorRect.new()
-	_ui_energia_barra.position = Vector2(2, 2)
-	_ui_energia_barra.size = Vector2(176, 10)
-	_ui_energia_barra.color = Paleta.HOJA_VERDE
-	_ui_energia_barra.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_ui_energia_fondo.add_child(_ui_energia_barra)
+	_hud = Hud.new()
+	_hud.visible = false
+	capa.add_child(_hud)
 
 	for i in 4:
 		var borde := ColorRect.new()
@@ -300,7 +278,29 @@ func _construir_ui() -> void:
 	_mini_mapa.offset_top = -22 - HormigueroMapa.ALTO * MiniMapa.PX - MiniMapa.MARGEN * 2
 	_mini_mapa.armar(_mapa)
 	_mini_mapa.marcar(_hormiga.position)
+	_mini_mapa.visible = false
 	capa.add_child(_mini_mapa)
+
+
+func _bajar_al_nido() -> void:
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.set_ease(Tween.EASE_IN_OUT)
+	tw.set_trans(Tween.TRANS_CUBIC)
+	tw.tween_property(_camara, "offset", Vector2.ZERO, 3.4)
+	tw.tween_property(_camara, "zoom", Vector2(1.75, 1.75), 3.4)
+	tw.chain().tween_callback(_terminar_intro)
+
+
+func _terminar_intro() -> void:
+	_intro = false
+	_hormiga.bloqueada = false
+	_camara.position_smoothing_enabled = true
+	_camara.position_smoothing_speed = 5.5
+	if _hud:
+		_hud.visible = true
+	if _mini_mapa:
+		_mini_mapa.visible = true
 
 
 func _process(delta: float) -> void:
@@ -310,7 +310,10 @@ func _process(delta: float) -> void:
 	_hormiga.gasta_energia = _mapa.esta_afuera(_hormiga.global_position)
 	p.actualizar_carga(delta)
 	energia = p.energia
-	_actualizar_barra_energia()
+	if _hud:
+		_hud.pintar(p.energia, p.ENERGIA_INICIAL, p.comida_en_almacen)
+	if _intro:
+		return
 
 	_reloj += delta
 	if p.resultado == Partida.Resultado.EN_CURSO and _reloj >= SEGUNDOS_POR_TIEMPO:
@@ -319,8 +322,6 @@ func _process(delta: float) -> void:
 	_actualizar_zonas(delta)
 	_actualizar_larvas()
 	_actualizar_estacion()
-	_ui_almacen.text = "Almacén  %d / 5" % p.comida_en_almacen
-	_ui_energia_label.text = "Energía  %d / %d" % [p.energia, p.ENERGIA_INICIAL]
 	
 	if _mini_mapa:
 		_mini_mapa.marcar(_hormiga.global_position)
@@ -383,7 +384,7 @@ func _actualizar_estacion() -> void:
 	var hielo := 0.0
 	match e:
 		Partida.Estacion.TARDE_HUMEDA:
-			tint = Color(1.0, 0.95, 0.88)
+			tint = Color(1.0, 0.97, 0.88)
 			_sfx.viento(false)
 			_viento_nieve.emitting = false
 		Partida.Estacion.GRIS:
@@ -411,38 +412,41 @@ func _mostrar_final() -> void:
 	_final_mostrado = true
 	if _mini_mapa:
 		_mini_mapa.visible = false
+	if _hud:
+		_hud.visible = false
 	var capa := CanvasLayer.new()
 	add_child(capa)
-	var fondo := ColorRect.new()
-	fondo.set_anchors_preset(Control.PRESET_FULL_RECT)
-	fondo.mouse_filter = Control.MOUSE_FILTER_STOP
-	capa.add_child(fondo)
+	var velo := ColorRect.new()
+	velo.set_anchors_preset(Control.PRESET_FULL_RECT)
+	velo.mouse_filter = Control.MOUSE_FILTER_STOP
+	velo.color = Color(0.20, 0.12, 0.08, 0.42)
+	capa.add_child(velo)
+	var caja := UiCozzy.tarjeta()
+	caja.set_anchors_preset(Control.PRESET_CENTER)
+	caja.offset_left = -250
+	caja.offset_right = 250
+	caja.offset_top = -130
+	caja.offset_bottom = 150
+	capa.add_child(caja)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 16)
+	caja.add_child(col)
+	var victoria := Juego.partida.resultado == Partida.Resultado.VICTORIA
+	col.add_child(UiCozzy.pastilla("Victoria" if victoria else "Invierno"))
 	var texto := Label.new()
-	texto.set_anchors_preset(Control.PRESET_CENTER)
-	texto.offset_left = -280
-	texto.offset_right = 280
-	texto.offset_top = -80
-	texto.offset_bottom = 80
 	texto.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	texto.add_theme_font_size_override("font_size", 28)
-	if Juego.partida.resultado == Partida.Resultado.VICTORIA:
-		fondo.color = Color(0.22, 0.12, 0.07, 0.72)
-		texto.add_theme_color_override("font_color", Paleta.HUESO)
+	texto.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UiCozzy.estilar_texto(texto, 22)
+	if victoria:
 		texto.text = "El Almacén está lleno.\nLas Larvas se agitan.\nEl Hormiguero sigue fragmentado.\nLa Reina no vuelve."
 	else:
-		fondo.color = Color(0.9, 0.93, 0.96, 0.82)
-		texto.add_theme_color_override("font_color", Color(0.2, 0.24, 0.28))
 		texto.text = "El Invierno llegó.\nLas Larvas no se mueven.\nAfuera quedó Comida que no alcanzó."
-	capa.add_child(texto)
+	col.add_child(texto)
 	var volver := Button.new()
 	volver.text = "Volver"
-	volver.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	volver.offset_left = -60
-	volver.offset_right = 60
-	volver.offset_top = -80
-	volver.offset_bottom = -44
+	UiCozzy.estilar_boton(volver)
 	volver.pressed.connect(Juego.ir_menu)
-	capa.add_child(volver)
+	col.add_child(volver)
 
 
 func _larva(pos: Vector2) -> Node2D:
@@ -468,6 +472,3 @@ func _pixel() -> Texture2D:
 	img.fill(Color.WHITE)
 	return ImageTexture.create_from_image(img)
 	
-func _actualizar_barra_energia() -> void:
-	var porcentaje: float = clampf(energia / energia_maxima, 0.0, 1.0)
-	_ui_energia_barra.size.x = 176.0 * porcentaje
