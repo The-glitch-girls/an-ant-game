@@ -94,7 +94,7 @@ func _cavar_tuneles() -> void:
 	_camara(58, 68, 5, 3)
 	_camara(36, 94, 5, 3) # fondo
 	_linea(36, 10, 36, 48, 2)
-	_linea(36, 48, 12, 38, 2)
+	#_linea(36, 48, 12, 38, 2) # conexión a la reina
 	_linea(36, 48, 54, 44, 2)
 	_linea(36, 48, 36, 72, 2)
 	_linea(36, 72, 22, 88, 2)
@@ -115,6 +115,13 @@ func _cavar_tuneles() -> void:
 	_linea(36, 10, 68, 10, 1)
 	# atajo izquierdo tapado
 	_linea(20, 22, 12, 38, 2)
+	
+	# Entrada bloqueada de la reina
+	_poner(18, 40, DERRUMBADA)
+	_poner(18, 41, DERRUMBADA)
+	_poner(19, 40, DERRUMBADA)
+	_poner(19, 41, DERRUMBADA)
+
 	for y in range(24, 32):
 		for x in range(18, 24):
 			if get_celda(x, y) == TUNEL:
