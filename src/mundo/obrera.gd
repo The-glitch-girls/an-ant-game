@@ -27,7 +27,7 @@ func _dibujar() -> void:
 	_cuerpo.add_child(_ovalo(Vector2(13, -2), Vector2(2.4, 2.4), Paleta.OJO))
 	if _lleva_miga:
 		var miga := Polygon2D.new()
-		miga.color = Paleta.TUNEL_OSCURO
+		miga.color = Paleta.AMBAR
 		miga.position = Vector2(16, 3)
 		miga.polygon = PackedVector2Array([Vector2(-4, 0), Vector2(5, -3), Vector2(4, 3)])
 		_cuerpo.add_child(miga)
