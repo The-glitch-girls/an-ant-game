@@ -17,6 +17,7 @@ const DIR_ARRIBA := 3
 
 signal intento_mover
 signal cerca_de_comida(pieza: Node2D)
+signal cerca_de_fragmento(fragmento: Node2D)
 
 var gasta_energia: bool = false
 var bloqueada: bool = false
@@ -66,16 +67,24 @@ func _armar_sensor() -> void:
 	_sensor.name = "Sensor"
 	var col := CollisionShape2D.new()
 	var shape := CircleShape2D.new()
-	shape.radius = 16
+	shape.radius = 20
 	col.shape = shape
 	_sensor.add_child(col)
 	add_child(_sensor)
 	_sensor.area_entered.connect(_on_area)
+	_sensor.body_entered.connect(_on_body)
 
 
 func _on_area(area: Area2D) -> void:
 	if area.is_in_group("comida"):
 		cerca_de_comida.emit(area)
+	if area.is_in_group("fragmento"):
+		cerca_de_fragmento.emit(area.get_parent())
+
+
+func _on_body(body: Node) -> void:
+	if body.is_in_group("fragmento"):
+		cerca_de_fragmento.emit(body)
 
 
 func _physics_process(delta: float) -> void:

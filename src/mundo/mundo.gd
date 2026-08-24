@@ -18,6 +18,7 @@ var _final_mostrado: bool = false
 var _mini_mapa: MiniMapa
 var _capas_hielo: Array[ColorRect] = []
 var _tiles: TileMapLayer
+var _bloqueos_reina: Array[Vector2i] = []
 var _hud: Control
 var _camara: Camera2D
 var _intro: bool = true
@@ -79,6 +80,39 @@ func _construir_tiles() -> void:
 			elif c == HormigueroMapa.DERRUMBADA:
 				atlas = Vector2i(2, 0)
 			_tiles.set_cell(Vector2i(x, y), 0, atlas)
+	
+	# Guardar las posiciones de los bloqueos de la reina
+	_guardar_bloqueos_reina()
+
+
+func _guardar_bloqueos_reina() -> void:
+	# Guardar las posiciones de los bloqueos de entrada a la cámara de la reina
+	# Basado en las coordenadas de _bloquear_entrada en hormiguero_mapa.gd
+	var centro_reina := Vector2i(12, 38)
+	var radio_reina := 7
+	
+	# Entrada desde abandonada (8, 56)
+	var entrada_abandonada := Vector2i(8, 56)
+	
+	# Entrada desde almacen (36, 48) 
+	var entrada_almacen := Vector2i(36, 48)
+	
+	# Entrada desde construcción (20, 18) - bloqueo agregado
+	var entrada_construccion := Vector2i(20, 18)
+	
+	# Calcular las celdas bloqueadas alrededor de la cámara de la reina
+	for y in range(centro_reina.y - radio_reina - 2, centro_reina.y + radio_reina + 3):
+		for x in range(centro_reina.x - radio_reina - 2, centro_reina.x + radio_reina + 3):
+			if _mapa.get_celda(x, y) == HormigueroMapa.TIERRA:
+				# Verificar si está en el camino de las entradas
+				var distancia_abandonada := (Vector2i(x, y) - entrada_abandonada).length()
+				var distancia_almacen := (Vector2i(x, y) - entrada_almacen).length()
+				var distancia_construccion := (Vector2i(x, y) - entrada_construccion).length()
+				
+				if distancia_abandonada < 3 or distancia_almacen < 3 or distancia_construccion < 3:
+					_bloqueos_reina.append(Vector2i(x, y))
+	
+	print("Bloqueos de la reina guardados: ", _bloqueos_reina.size())
 
 
 func _hacer_tileset() -> TileSet:
@@ -190,6 +224,7 @@ func _construir_hormiga() -> void:
 	_hormiga.position = _mapa.spawn
 	add_child(_hormiga)
 	_hormiga.cerca_de_comida.connect(_on_cerca_comida)
+	_hormiga.cerca_de_fragmento.connect(_on_cerca_fragmento)
 	_hormiga.intento_mover.connect(func() -> void:
 		_sfx.tocar("paso")
 	)
@@ -224,12 +259,15 @@ func _construir_comidas() -> void:
 
 
 func _cargar_texturas_fragmentos() -> void:
+	# Fragmentos específicos para la pala
 	_fragmentos_texturas[Partida.Fragmento.PALA_MANGO] = load("res://assets/herramientas/fragmento_madera.png")
 	_fragmentos_texturas[Partida.Fragmento.PALA_CABEZAL] = load("res://assets/herramientas/fragmento_metal.png")
-	_fragmentos_texturas[Partida.Fragmento.PALA_RESTO] = load("res://assets/herramientas/fragmento_madera.png")
-	_fragmentos_texturas[Partida.Fragmento.RAMA_PUNTA] = load("res://assets/herramientas/fragmento_madera.png")
+	_fragmentos_texturas[Partida.Fragmento.PALA_RESTO] = load("res://assets/herramientas/fragmento_metal.png")
+	
+	# Fragmentos específicos para la rama
+	_fragmentos_texturas[Partida.Fragmento.RAMA_PUNTA] = load("res://assets/herramientas/fragmento_palo.png")
 	_fragmentos_texturas[Partida.Fragmento.RAMA_CUERPO] = load("res://assets/herramientas/fragmento_madera.png")
-	_fragmentos_texturas[Partida.Fragmento.RAMA_BASE] = load("res://assets/herramientas/fragmento_madera.png")
+	_fragmentos_texturas[Partida.Fragmento.RAMA_BASE] = load("res://assets/herramientas/fragmento_palo.png")
 	
 	_herramientas_texturas[Partida.Herramienta.PALA] = load("res://assets/herramientas/pala_completa.png")
 	_herramientas_texturas[Partida.Herramienta.RAMA] = load("res://assets/herramientas/rama_completa.png")
@@ -393,8 +431,21 @@ func _actualizar_zonas(delta: float) -> void:
 	if _reina_area.overlaps_body(_hormiga) and p.lleva_comida:
 		p.depositar(Partida.Destino.CAMARA_REINA)
 	if _construccion_area.overlaps_body(_hormiga):
-		if Input.is_key_pressed(KEY_U):
+		if Input.is_action_just_pressed("ui_text_delete") or Input.is_key_pressed(KEY_U):
 			_intentar_reconstruir()
+	
+	# Controles de herramientas
+	if Input.is_key_pressed(KEY_1):
+		p.cambiar_herramienta(Partida.Herramienta.PALA)
+		print("Herramienta activa: Pala")
+	if Input.is_key_pressed(KEY_2):
+		p.cambiar_herramienta(Partida.Herramienta.RAMA)
+		print("Herramienta activa: Rama")
+	if Input.is_key_pressed(KEY_SPACE):
+		if p.herramienta_activa == Partida.Herramienta.PALA:
+			_usar_pala_en_posicion()
+		else:
+			p.usar_herramienta()
 	if _descanso_area.overlaps_body(_hormiga):
 		if not _en_descanso:
 			_en_descanso = true
@@ -418,6 +469,20 @@ func _on_cerca_comida(pieza: Node2D) -> void:
 			_sfx.tocar("cargar")
 
 
+func _on_cerca_fragmento(fragmento: Node2D) -> void:
+	var p: Partida = Juego.partida
+	if fragmento == null:
+		return
+		
+	if fragmento is FragmentoPieza and not (fragmento as FragmentoPieza).tomada:
+		p.recolectar_fragmento((fragmento as FragmentoPieza).tipo)
+		(fragmento as FragmentoPieza).tomada = true
+		fragmento.visible = false
+		_sfx.tocar("cargar")
+		_actualizar_ui_herramientas()
+		print("Fragmento recolectado desde hormiga: ", (fragmento as FragmentoPieza).tipo)
+
+
 func _actualizar_larvas() -> void:
 	var n: int = Juego.partida.comida_en_almacen
 	for i in _larvas.size():
@@ -433,13 +498,23 @@ func _intentar_reconstruir() -> void:
 	if p == null:
 		return
 	
+	print("Intentando reconstruir herramientas...")
+	print("Fragmentos recolectados: ", p.fragmentos_recolectados)
+	
 	for herramienta in [Partida.Herramienta.PALA, Partida.Herramienta.RAMA]:
-		if p.tiene_fragmentos_para(herramienta) and not p.tiene_herramienta(herramienta):
+		var puede = p.tiene_fragmentos_para(herramienta)
+		var tiene = p.tiene_herramienta(herramienta)
+		print("Herramienta: ", herramienta, " puede: ", puede, " tiene: ", tiene)
+		
+		if puede and not tiene:
 			if p.reconstruir_herramienta(herramienta):
+				print("¡Herramienta reconstruida: ", herramienta)
 				_mostrar_efecto_reconstruccion()
 				_mostrar_herramienta_reconstruida(herramienta)
 				_sfx.tocar("depositar")
 				break
+		else:
+			print("No se puede reconstruir ", herramienta, " - fragmentos: ", puede, " ya tiene: ", tiene)
 
 
 func _mostrar_efecto_reconstruccion() -> void:
@@ -484,6 +559,70 @@ func _mostrar_herramienta_reconstruida(herramienta: Partida.Herramienta) -> void
 func _actualizar_ui_herramientas() -> void:
 	if _hud != null:
 		_hud.pintar(energia, energia_maxima, Juego.partida.comida_en_almacen)
+
+
+func _usar_pala_en_posicion() -> void:
+	var hormiga_pos := _hormiga.global_position
+	var tile_x := int(hormiga_pos.x / HormigueroMapa.TILE)
+	var tile_y := int(hormiga_pos.y / HormigueroMapa.TILE)
+	var tile_pos := Vector2i(tile_x, tile_y)
+	
+	print("Intentando usar pala en tile: ", tile_pos)
+	
+	# Verificar si está cerca de un bloqueo de la reina
+	for bloqueo in _bloqueos_reina:
+		var distancia := (tile_pos - bloqueo).length()
+		if distancia <= 1:
+			# Eliminar el bloqueo
+			_mapa._poner(bloqueo.x, bloqueo.y, HormigueroMapa.TUNEL)
+			_actualizar_tile(bloqueo)
+			_bloqueos_reina.erase(bloqueo)
+			_sfx.tocar("depositar")
+			print("¡Bloqueo eliminado en: ", bloqueo)
+			_mostrar_efecto_pala(hormiga_pos)
+			return
+	
+	# Verificar si está en la derrumbada
+	if _mapa.get_celda(tile_x, tile_y) == HormigueroMapa.DERRUMBADA:
+		_mapa.eliminar_derrumbada(tile_x, tile_y)
+		_actualizar_tile(tile_pos)
+		_sfx.tocar("depositar")
+		print("¡Derrumbada eliminada en: ", tile_pos)
+		_mostrar_efecto_pala(hormiga_pos)
+		return
+	
+	print("No hay bloqueos para eliminar aquí")
+
+
+func _actualizar_tile(pos: Vector2i) -> void:
+	var c := _mapa.get_celda(pos.x, pos.y)
+	var atlas := Vector2i(0, 0)
+	if c == HormigueroMapa.CIELO:
+		atlas = Vector2i(3, 0)
+	elif c == HormigueroMapa.TUNEL:
+		atlas = Vector2i(1, 0)
+	elif c == HormigueroMapa.DERRUMBADA:
+		atlas = Vector2i(2, 0)
+	_tiles.set_cell(pos, 0, atlas)
+
+
+func _mostrar_efecto_pala(pos: Vector2) -> void:
+	var particulas := GPUParticles2D.new()
+	particulas.position = pos
+	particulas.amount = 15
+	particulas.lifetime = 0.8
+	particulas.texture = _pixel()
+	var mat := ParticleProcessMaterial.new()
+	mat.gravity = Vector3(0, 30, 0)
+	mat.scale_min = 0.3
+	mat.scale_max = 0.8
+	mat.color = Color(0.6, 0.4, 0.2, 0.8)
+	particulas.process_material = mat
+	add_child(particulas)
+	particulas.restart()
+	
+	await get_tree().create_timer(1.0).timeout
+	particulas.queue_free()
 
 
 func _actualizar_estacion() -> void:
