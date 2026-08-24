@@ -144,8 +144,11 @@ func _label(pos: Vector2, texto: String) -> void:
 	var lab := Label.new()
 	lab.text = texto
 	lab.position = pos
-	lab.add_theme_font_size_override("font_size", 13)
-	lab.add_theme_color_override("font_color", Color(0.42, 0.26, 0.14, 0.62))
+	lab.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	UiCozzy.estilar_texto(lab, 15, Paleta.HUESO)
+	lab.add_theme_color_override("font_shadow_color", Color(0.25, 0.15, 0.08, 0.45))
+	lab.add_theme_constant_override("shadow_offset_x", 1)
+	lab.add_theme_constant_override("shadow_offset_y", 2)
 	add_child(lab)
 
 

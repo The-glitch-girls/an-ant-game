@@ -1,6 +1,8 @@
 class_name UiCozzy
 extends Object
 
+const FUENTE := preload("res://fonts/Coiny-Regular.ttf")
+
 
 static func panel_crema(radio: int = 22) -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
@@ -45,11 +47,13 @@ static func estilar_boton(b: Button) -> void:
 	b.add_theme_color_override("font_color", Paleta.TINTA)
 	b.add_theme_color_override("font_hover_color", Paleta.CREMA)
 	b.add_theme_color_override("font_pressed_color", Paleta.CREMA)
+	b.add_theme_font_override("font", FUENTE)
 	b.add_theme_font_size_override("font_size", 22)
 	b.custom_minimum_size.y = 46
 
 
 static func estilar_texto(lab: Label, tam: int, color: Color = Paleta.TINTA) -> void:
+	lab.add_theme_font_override("font", FUENTE)
 	lab.add_theme_color_override("font_color", color)
 	lab.add_theme_font_size_override("font_size", tam)
 
