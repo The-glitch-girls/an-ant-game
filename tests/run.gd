@@ -10,11 +10,13 @@ func _init() -> void:
 	_test_blanco_sin_cinco_comidas_es_derrota()
 	_test_depositar_en_camara_de_la_reina_no_cuenta()
 	_test_energia_cero_suelta_comida_y_no_es_derrota()
-	_test_solo_carga_una_comida()
+	_test_hoja_carga_hasta_tres_comidas()
 	_test_correr_gasta_dos_y_cargar_gasta_mas()
 	_test_saltar_gasta_uno()
 	_test_descansar_restaura_energia_y_el_invierno_avanza()
 	_test_victoria_no_se_vuelve_derrota_al_llegar_el_blanco()
+	_test_reconstruir_hoja_con_tres_fragmentos()
+	_test_reconstruir_pala_con_tres_fragmentos()
 	_test_minimapa_cubre_el_hormiguero_y_marca_la_hormiga()
 
 	print("PARTIDA %d passed, %d failed" % [_passed, _failed])
@@ -73,10 +75,12 @@ func _test_energia_cero_suelta_comida_y_no_es_derrota() -> void:
 	_ok("no es derrota", p.resultado == Partida.Resultado.EN_CURSO)
 
 
-func _test_solo_carga_una_comida() -> void:
+func _test_hoja_carga_hasta_tres_comidas() -> void:
 	var p := Partida.new()
 	_ok("primera carga", p.cargar())
-	_ok("segunda carga falla", p.cargar() == false)
+	_ok("segunda carga", p.cargar())
+	_ok("tercera carga", p.cargar())
+	_ok("cuarta carga falla", p.cargar() == false)
 
 
 func _test_correr_gasta_dos_y_cargar_gasta_mas() -> void:
@@ -128,3 +132,23 @@ func _test_victoria_no_se_vuelve_derrota_al_llegar_el_blanco() -> void:
 		p.depositar(Partida.Destino.ALMACEN)
 	p.transcurrir(Partida.TIEMPO_POR_ESTACION * 4)
 	_ok("victoria se mantiene", p.resultado == Partida.Resultado.VICTORIA)
+
+
+func _test_reconstruir_hoja_con_tres_fragmentos() -> void:
+	var p := Partida.new()
+	_ok("un fragmento nuevo se registra", p.recoger_fragmento(Partida.Herramienta.HOJA, "tallo"))
+	_ok("un fragmento duplicado se rechaza", p.recoger_fragmento(Partida.Herramienta.HOJA, "tallo") == false)
+	p.recoger_fragmento(Partida.Herramienta.HOJA, "cuerpo")
+	p.recoger_fragmento(Partida.Herramienta.HOJA, "borde")
+	_ok("tres fragmentos habilitan la hoja", p.puede_reconstruir(Partida.Herramienta.HOJA))
+	_ok("reconstruir habilita la hoja", p.reconstruir(Partida.Herramienta.HOJA))
+	_ok("la hoja queda disponible", p.tiene_herramienta(Partida.Herramienta.HOJA))
+
+
+func _test_reconstruir_pala_con_tres_fragmentos() -> void:
+	var p := Partida.new()
+	for id in ["mango", "cabezal", "restante"]:
+		p.recoger_fragmento(Partida.Herramienta.PALA, id)
+	_ok("tres fragmentos habilitan la pala", p.puede_reconstruir(Partida.Herramienta.PALA))
+	_ok("reconstruir habilita la pala", p.reconstruir(Partida.Herramienta.PALA))
+	_ok("la pala queda disponible", p.tiene_herramienta(Partida.Herramienta.PALA))
