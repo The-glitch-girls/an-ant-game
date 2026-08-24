@@ -4,6 +4,8 @@ extends RefCounted
 enum Estacion { TARDE_HUMEDA, GRIS, PRIMER_HIELO, BLANCO }
 enum Resultado { EN_CURSO, VICTORIA, DERROTA }
 enum Destino { ALMACEN, CAMARA_REINA }
+enum Herramienta { PALA, RAMA }
+enum Fragmento { PALA_MANGO, PALA_CABEZAL, PALA_RESTO, RAMA_PUNTA, RAMA_CUERPO, RAMA_BASE }
 
 const ENERGIA_INICIAL := 100
 const COMIDAS_PARA_VICTORIA := 5
@@ -26,6 +28,8 @@ var estacion: Estacion = Estacion.TARDE_HUMEDA
 var tiempo: int = 0
 var tiempo_descanso: float = 0.0
 var resultado: Resultado = Resultado.EN_CURSO
+var fragmentos_recolectados: Array[Fragmento] = []
+var herramientas_reconstruidas: Array[Herramienta] = []
 
 func correr() -> void:
 	if resultado != Resultado.EN_CURSO:
@@ -117,3 +121,47 @@ func actualizar_descanso(delta: float) -> void:
 	if tiempo_descanso >= 0.1:
 		tiempo_descanso -= 0.1
 		energia = mini(ENERGIA_INICIAL, energia + 1)
+
+
+func recolectar_fragmento(fragmento: Fragmento) -> void:
+	if fragmento in fragmentos_recolectados:
+		return
+	fragmentos_recolectados.append(fragmento)
+
+
+func tiene_fragmentos_para(herramienta: Herramienta) -> bool:
+	match herramienta:
+		Herramienta.PALA:
+			return Fragmento.PALA_MANGO in fragmentos_recolectados and \
+				   Fragmento.PALA_CABEZAL in fragmentos_recolectados and \
+				   Fragmento.PALA_RESTO in fragmentos_recolectados
+		Herramienta.RAMA:
+			return Fragmento.RAMA_PUNTA in fragmentos_recolectados and \
+				   Fragmento.RAMA_CUERPO in fragmentos_recolectados and \
+				   Fragmento.RAMA_BASE in fragmentos_recolectados
+	return false
+
+
+func reconstruir_herramienta(herramienta: Herramienta) -> bool:
+	if herramienta in herramientas_reconstruidas:
+		return false
+	if not tiene_fragmentos_para(herramienta):
+		return false
+	
+	herramientas_reconstruidas.append(herramienta)
+	
+	match herramienta:
+		Herramienta.PALA:
+			fragmentos_recolectados.erase(Fragmento.PALA_MANGO)
+			fragmentos_recolectados.erase(Fragmento.PALA_CABEZAL)
+			fragmentos_recolectados.erase(Fragmento.PALA_RESTO)
+		Herramienta.RAMA:
+			fragmentos_recolectados.erase(Fragmento.RAMA_PUNTA)
+			fragmentos_recolectados.erase(Fragmento.RAMA_CUERPO)
+			fragmentos_recolectados.erase(Fragmento.RAMA_BASE)
+	
+	return true
+
+
+func tiene_herramienta(herramienta: Herramienta) -> bool:
+	return herramienta in herramientas_reconstruidas

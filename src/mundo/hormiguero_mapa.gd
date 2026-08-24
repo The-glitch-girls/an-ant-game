@@ -20,6 +20,7 @@ var descanso: Vector2 = Vector2.ZERO
 var abandonada: Vector2 = Vector2.ZERO
 var humeda: Vector2 = Vector2.ZERO
 var fondo: Vector2 = Vector2.ZERO
+var construccion: Vector2 = Vector2.ZERO
 var derrumbada: Rect2 = Rect2()
 var comidas: Array[Vector2] = []
 var rutas_obreras: Array = []
@@ -92,6 +93,7 @@ func _cavar_tuneles() -> void:
 	_camara(36, 30, 4, 3)
 	_camara(18, 70, 4, 3)
 	_camara(58, 68, 5, 3)
+	_camara(20, 18, 5, 4) # construcción
 	_camara(36, 94, 5, 3) # fondo
 	_linea(36, 10, 36, 48, 2)
 	_linea(36, 48, 12, 38, 2)
@@ -104,6 +106,7 @@ func _cavar_tuneles() -> void:
 	_linea(12, 38, 8, 56, 1)
 	_linea(54, 44, 64, 52, 1)
 	_linea(36, 48, 36, 30, 1)
+	_linea(36, 30, 20, 18, 1) # conexión a construcción
 	_linea(36, 72, 18, 70, 1)
 	_linea(36, 72, 58, 68, 1)
 	_linea(36, 72, 36, 94, 1)
@@ -152,6 +155,7 @@ func _colocar_puntos() -> void:
 	descanso = mundo(36, 72)
 	abandonada = mundo(8, 56)
 	humeda = mundo(64, 52)
+	construccion = mundo(20, 18)
 	fondo = mundo(36, 94)
 	spawn = mundo(54, 44)
 	derrumbada = Rect2(mundo(18, 24) - Vector2(TILE, TILE), Vector2(TILE * 7, TILE * 9))
