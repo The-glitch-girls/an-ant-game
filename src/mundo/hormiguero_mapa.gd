@@ -17,6 +17,9 @@ var reina: Vector2 = Vector2.ZERO
 var larvas: Vector2 = Vector2.ZERO
 var almacen: Vector2 = Vector2.ZERO
 var descanso: Vector2 = Vector2.ZERO
+var abandonada: Vector2 = Vector2.ZERO
+var humeda: Vector2 = Vector2.ZERO
+var fondo: Vector2 = Vector2.ZERO
 var derrumbada: Rect2 = Rect2()
 var comidas: Array[Vector2] = []
 var rutas_obreras: Array = []
@@ -63,14 +66,14 @@ func _poner(x: int, y: int, v: int) -> void:
 func _en_monton(x: int, y: int) -> bool:
 	if y < 10:
 		return false
-	var nx: float = (x - 36.0) / 31.0
-	var ny: float = (y - 12.0) / 86.0
-	return nx * nx + ny * ny * 0.42 < 1.0
+	var nx: float = (x - 36.0) / 34.8
+	var ny: float = (y - 11.0) / 87.0
+	return nx * nx + ny * ny * 0.48 < 1.0
 
 
 func _franja_superficie() -> void:
 	superficie_y = 9.5 * TILE
-	for x in range(8, 64):
+	for x in range(4, 68):
 		if _en_monton(x, 12):
 			_poner(x, 9, TUNEL)
 			_poner(x, 10, TUNEL)
@@ -84,6 +87,12 @@ func _cavar_tuneles() -> void:
 	_camara(36, 72, 6, 5) # descanso
 	_camara(22, 88, 5, 4)
 	_camara(50, 90, 6, 4)
+	_camara(8, 56, 5, 4) # abandonada
+	_camara(64, 52, 5, 4) # húmeda
+	_camara(36, 30, 4, 3)
+	_camara(18, 70, 4, 3)
+	_camara(58, 68, 5, 3)
+	_camara(36, 94, 5, 3) # fondo
 	_linea(36, 10, 36, 48, 2)
 	_linea(36, 48, 12, 38, 2)
 	_linea(36, 48, 54, 44, 2)
@@ -92,8 +101,18 @@ func _cavar_tuneles() -> void:
 	_linea(36, 72, 50, 90, 2)
 	_linea(12, 38, 22, 88, 1)
 	_linea(54, 44, 50, 90, 1)
-	_linea(8, 10, 36, 10, 1)
-	_linea(36, 10, 62, 10, 1)
+	_linea(12, 38, 8, 56, 1)
+	_linea(54, 44, 64, 52, 1)
+	_linea(36, 48, 36, 30, 1)
+	_linea(36, 72, 18, 70, 1)
+	_linea(36, 72, 58, 68, 1)
+	_linea(36, 72, 36, 94, 1)
+	_linea(22, 88, 36, 94, 1)
+	_linea(50, 90, 36, 94, 1)
+	_linea(8, 56, 18, 70, 1)
+	_linea(64, 52, 58, 68, 1)
+	_linea(4, 10, 36, 10, 1)
+	_linea(36, 10, 68, 10, 1)
 	# atajo izquierdo tapado
 	_linea(20, 22, 12, 38, 2)
 	for y in range(24, 32):
@@ -131,6 +150,9 @@ func _colocar_puntos() -> void:
 	larvas = mundo(36, 48)
 	almacen = mundo(54, 44)
 	descanso = mundo(36, 72)
+	abandonada = mundo(8, 56)
+	humeda = mundo(64, 52)
+	fondo = mundo(36, 94)
 	spawn = mundo(54, 44)
 	derrumbada = Rect2(mundo(18, 24) - Vector2(TILE, TILE), Vector2(TILE * 7, TILE * 9))
 	comidas = [
@@ -147,6 +169,8 @@ func _colocar_puntos() -> void:
 		[mundo(18, 10), mundo(40, 10), mundo(55, 10), mundo(30, 10)],
 		[mundo(12, 38), mundo(16, 50), mundo(12, 38)],
 		[mundo(50, 90), mundo(54, 70), mundo(50, 90)],
+		[mundo(8, 56), mundo(18, 70), mundo(8, 56)],
+		[mundo(64, 52), mundo(58, 68), mundo(64, 52)],
 	]
 
 

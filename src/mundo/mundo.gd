@@ -138,6 +138,9 @@ func _etiquetar_camaras() -> void:
 	_label(_mapa.larvas + Vector2(-28, -36), "Larvas")
 	_label(_mapa.almacen + Vector2(-32, -36), "Almacén")
 	_label(_mapa.descanso + Vector2(-34, -36), "Descanso")
+	_label(_mapa.abandonada + Vector2(-40, -36), "Abandonada")
+	_label(_mapa.humeda + Vector2(-28, -36), "Húmeda")
+	_label(_mapa.fondo + Vector2(-22, -36), "Fondo")
 
 
 func _label(pos: Vector2, texto: String) -> void:
