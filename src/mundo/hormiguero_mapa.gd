@@ -121,7 +121,8 @@ func _cavar_tuneles() -> void:
 	
 	_linea(54, 44, 64, 52, 1)
 	_linea(36, 48, 36, 30, 1)
-	_linea(36, 30, 20, 18, 1) # conexión a construcción
+	# _linea(36, 30, 20, 18, 1) # conexión a construcción - BLOQUEADA
+	_bloquear_entrada(12, 38, 7, 6, 20, 18, 1) # Bloquear entrada desde construcción
 	_linea(36, 72, 18, 70, 1)
 	_linea(36, 72, 58, 68, 1)
 	_linea(36, 72, 36, 94, 1)
@@ -199,6 +200,35 @@ func hay_derrumbada_en_tunel() -> bool:
 		for x in ANCHO:
 			if get_celda(x, y) == DERRUMBADA:
 				return true
+	return false
+
+
+func eliminar_derrumbada(x: int, y: int) -> bool:
+	if get_celda(x, y) == DERRUMBADA:
+		_poner(x, y, TUNEL)
+		return true
+	return false
+
+
+func eliminar_bloqueo_entrada_reina(x: int, y: int) -> bool:
+	# Coordenadas de los bloqueos de entrada a la reina
+	var bloqueos = [
+		[12, 38, 7, 6], # cámara de la reina
+		[8, 56, 1],    # entrada desde abandonada
+		[36, 48, 2],   # entrada desde almacen
+	]
+	
+	for bloqueo in bloqueos:
+		var bx: int = bloqueo[0]
+		var by: int = bloqueo[1]
+		var grosor: int = bloqueo[2] if bloqueo.size() > 2 else 1
+		
+		var distancia := sqrt((x - bx) ** 2 + (y - by) ** 2)
+		if distancia <= grosor + 1:
+			# Convertir bloqueo a túnel
+			_poner(x, y, TUNEL)
+			return true
+	
 	return false
 	
 func _bloquear_entrada(

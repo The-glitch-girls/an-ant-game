@@ -81,57 +81,60 @@ class _Tira extends Control:
 
 
 class _HerramientasUI extends Control:
-	var _pala_texture: Texture2D
-	var _rama_texture: Texture2D
-	var _pala_sprite: Sprite2D
-	var _rama_sprite: Sprite2D
+	var _pala_label: Label
+	var _rama_label: Label
+	var _instrucciones: Label
 
 	func _ready() -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_pala_texture = load("res://assets/herramientas/pala_completa.png")
-		_rama_texture = load("res://assets/herramientas/rama_completa.png")
+		
+		var v_box := VBoxContainer.new()
+		v_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		v_box.add_theme_constant_override("separation", 4)
+		v_box.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		add_child(v_box)
 		
 		var h_box := HBoxContainer.new()
 		h_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		h_box.add_theme_constant_override("separation", 20)
-		h_box.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		add_child(h_box)
+		v_box.add_child(h_box)
 		
-		var pala_label := Label.new()
-		pala_label.text = "Pala"
-		pala_label.add_theme_font_size_override("font_size", 12)
-		pala_label.add_theme_color_override("font_color", Color(0.42, 0.26, 0.14))
-		h_box.add_child(pala_label)
+		_pala_label = Label.new()
+		_pala_label.text = "[1] Pala: ❌"
+		_pala_label.add_theme_font_size_override("font_size", 13)
+		_pala_label.add_theme_color_override("font_color", Color(0.42, 0.26, 0.14))
+		h_box.add_child(_pala_label)
 		
-		_pala_sprite = Sprite2D.new()
-		_pala_sprite.texture = _pala_texture
-		_pala_sprite.scale = Vector2(0.15, 0.15)
-		_pala_sprite.modulate = Color(0.5, 0.5, 0.5, 0.5)
-		h_box.add_child(_pala_sprite)
+		_rama_label = Label.new()
+		_rama_label.text = "[2] Rama: ❌"
+		_rama_label.add_theme_font_size_override("font_size", 13)
+		_rama_label.add_theme_color_override("font_color", Color(0.42, 0.26, 0.14))
+		h_box.add_child(_rama_label)
 		
-		var rama_label := Label.new()
-		rama_label.text = "Rama"
-		rama_label.add_theme_font_size_override("font_size", 12)
-		rama_label.add_theme_color_override("font_color", Color(0.42, 0.26, 0.14))
-		h_box.add_child(rama_label)
-		
-		_rama_sprite = Sprite2D.new()
-		_rama_sprite.texture = _rama_texture
-		_rama_sprite.scale = Vector2(0.15, 0.15)
-		_rama_sprite.modulate = Color(0.5, 0.5, 0.5, 0.5)
-		h_box.add_child(_rama_sprite)
+		_instrucciones = Label.new()
+		_instrucciones.text = "[ESPACIO] Usar herramienta"
+		_instrucciones.add_theme_font_size_override("font_size", 11)
+		_instrucciones.add_theme_color_override("font_color", Color(0.42, 0.26, 0.14))
+		v_box.add_child(_instrucciones)
 
 	func actualizar() -> void:
 		var p: Partida = Juego.partida
 		if p == null:
 			return
 		
+		var pala_activa = p.herramienta_activa == Partida.Herramienta.PALA
+		var rama_activa = p.herramienta_activa == Partida.Herramienta.RAMA
+		
 		if p.tiene_herramienta(Partida.Herramienta.PALA):
-			_pala_sprite.modulate = Color.WHITE
+			_pala_label.text = "[1] Pala: ✅" if pala_activa else "[1] Pala: ✅"
+			_pala_label.add_theme_color_override("font_color", Color.WHITE if pala_activa else Color(0.42, 0.26, 0.14))
 		else:
-			_pala_sprite.modulate = Color(0.5, 0.5, 0.5, 0.5)
+			_pala_label.text = "[1] Pala: ❌"
+			_pala_label.add_theme_color_override("font_color", Color(0.3, 0.3, 0.3))
 		
 		if p.tiene_herramienta(Partida.Herramienta.RAMA):
-			_rama_sprite.modulate = Color.WHITE
+			_rama_label.text = "[2] Rama: ✅" if rama_activa else "[2] Rama: ✅"
+			_rama_label.add_theme_color_override("font_color", Color.WHITE if rama_activa else Color(0.42, 0.26, 0.14))
 		else:
-			_rama_sprite.modulate = Color(0.5, 0.5, 0.5, 0.5)
+			_rama_label.text = "[2] Rama: ❌"
+			_rama_label.add_theme_color_override("font_color", Color(0.3, 0.3, 0.3))

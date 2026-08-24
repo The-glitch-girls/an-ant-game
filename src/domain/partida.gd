@@ -30,6 +30,7 @@ var tiempo_descanso: float = 0.0
 var resultado: Resultado = Resultado.EN_CURSO
 var fragmentos_recolectados: Array[Fragmento] = []
 var herramientas_reconstruidas: Array[Herramienta] = []
+var herramienta_activa: Herramienta = Herramienta.PALA
 
 func correr() -> void:
 	if resultado != Resultado.EN_CURSO:
@@ -165,3 +166,40 @@ func reconstruir_herramienta(herramienta: Herramienta) -> bool:
 
 func tiene_herramienta(herramienta: Herramienta) -> bool:
 	return herramienta in herramientas_reconstruidas
+
+
+func cambiar_herramienta(herramienta: Herramienta) -> bool:
+	if not tiene_herramienta(herramienta):
+		return false
+	herramienta_activa = herramienta
+	return true
+
+
+func usar_herramienta() -> bool:
+	if not tiene_herramienta(herramienta_activa):
+		return false
+	
+	match herramienta_activa:
+		Herramienta.PALA:
+			return _usar_pala()
+		Herramienta.RAMA:
+			return _usar_rama()
+	return false
+
+
+func _usar_pala() -> bool:
+	# La pala puede excavar/desbloquear zonas
+	print("Usando pala para excavar")
+	return true
+
+
+func usar_pala_en(pos: Vector2) -> bool:
+	# Esta función será llamada desde el mundo para eliminar bloqueos
+	print("Usando pala en posición: ", pos)
+	return true
+
+
+func _usar_rama() -> bool:
+	# La rama puede construir/reparar estructuras
+	print("Usando rama para construir/reparar")
+	return true
