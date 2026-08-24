@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3 uid="uid://colonia_config"]
+[gd_scene load_steps=2 format=3 uid="uid://bnpfrpxn8kpqv"]
 
-[ext_resource type="Script" path="res://src/menu/configuracion.gd" id="1_cfg"]
+[ext_resource type="Script" uid="uid://bdmvrrek8x6br" path="res://src/menu/configuracion.gd" id="1_cfg"]
 
 [node name="Configuracion" type="Control"]
 layout_mode = 3

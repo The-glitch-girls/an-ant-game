@@ -93,7 +93,7 @@ func _cavar_tuneles() -> void:
 	_camara(36, 30, 4, 3)
 	_camara(18, 70, 4, 3)
 	_camara(58, 68, 5, 3)
-	_camara(20, 18, 5, 4) # construcción
+	_camara(54, 18, 5, 4)  # construcción
 	_camara(36, 94, 5, 3) # fondo
 	_linea(36, 10, 36, 48, 2)
 	_linea(36, 48, 54, 44, 2)
@@ -122,7 +122,7 @@ func _cavar_tuneles() -> void:
 	_linea(54, 44, 64, 52, 1)
 	_linea(36, 48, 36, 30, 1)
 	# _linea(36, 30, 20, 18, 1) # conexión a construcción - BLOQUEADA
-	_bloquear_entrada(12, 38, 7, 6, 20, 18, 1) # Bloquear entrada desde construcción
+	_bloquear_entrada(12, 38, 7, 6, 20, 18, 1)
 	_linea(36, 72, 18, 70, 1)
 	_linea(36, 72, 58, 68, 1)
 	_linea(36, 72, 36, 94, 1)
@@ -132,8 +132,7 @@ func _cavar_tuneles() -> void:
 	_linea(64, 52, 58, 68, 1)
 	_linea(4, 10, 36, 10, 1)
 	_linea(36, 10, 68, 10, 1)
-	# atajo izquierdo tapado
-	_linea(20, 22, 12, 38, 2)
+	_linea(54, 22, 12, 38, 2) # linea hacua construccion
 
 	for y in range(24, 32):
 		for x in range(18, 24):
@@ -172,7 +171,7 @@ func _colocar_puntos() -> void:
 	descanso = mundo(36, 72)
 	abandonada = mundo(8, 56)
 	humeda = mundo(64, 52)
-	construccion = mundo(20, 18)
+	construccion = mundo(54, 18)
 	fondo = mundo(36, 94)
 	spawn = mundo(54, 44)
 	derrumbada = Rect2(mundo(18, 24) - Vector2(TILE, TILE), Vector2(TILE * 7, TILE * 9))
