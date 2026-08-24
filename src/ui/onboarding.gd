@@ -67,7 +67,7 @@ func _armar() -> void:
 	col.add_child(situacion)
 
 	var mision := Label.new()
-	mision.text = "Traé cinco Comidas al Almacén. Una a la vez."
+	mision.text = "Trae cinco Comidas al Almacén. Una a la vez."
 	mision.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UiCozzy.estilar_texto(mision, 24, Paleta.TERRACOTA)
 	col.add_child(mision)
