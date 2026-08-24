@@ -4,6 +4,9 @@
 export_credentials.cfg
 export_credentials.encryption_key
 icon.svg.import
+project.godot
+# Godot 4+ generated import files
+*.import
 
 # OS
 .DS_Store
