@@ -96,14 +96,29 @@ func _cavar_tuneles() -> void:
 	_camara(20, 18, 5, 4) # construcción
 	_camara(36, 94, 5, 3) # fondo
 	_linea(36, 10, 36, 48, 2)
-	_linea(36, 48, 12, 38, 2)
 	_linea(36, 48, 54, 44, 2)
 	_linea(36, 48, 36, 72, 2)
 	_linea(36, 72, 22, 88, 2)
 	_linea(36, 72, 50, 90, 2)
-	_linea(12, 38, 22, 88, 1)
 	_linea(54, 44, 50, 90, 1)
+	
+	# accesos a la camara de la reina
+	_linea(36, 48, 12, 38, 2)
+	_linea(12, 38, 22, 88, 1)
 	_linea(12, 38, 8, 56, 1)
+	
+	# --------------------------------------------------
+	# BLOQUEOS - ZONA DE LA REINA
+	# --------------------------------------------------
+	# Entrada inferior derecha _linea(12, 38, 22, 88, 1)
+	_bloquear_entrada(12, 38, 7, 6, 22, 88, 1)
+			
+	# Entrada inferior izquierda de la reina _linea(12, 38, 8, 56, 1)
+	_bloquear_entrada(12, 38, 7, 6, 8, 56, 1)
+			
+	# Entrada derecha _linea(36, 48, 12, 38, 2)
+	_bloquear_entrada(12, 38, 7, 6, 36, 48, 2)
+	
 	_linea(54, 44, 64, 52, 1)
 	_linea(36, 48, 36, 30, 1)
 	_linea(36, 30, 20, 18, 1) # conexión a construcción
@@ -118,6 +133,7 @@ func _cavar_tuneles() -> void:
 	_linea(36, 10, 68, 10, 1)
 	# atajo izquierdo tapado
 	_linea(20, 22, 12, 38, 2)
+
 	for y in range(24, 32):
 		for x in range(18, 24):
 			if get_celda(x, y) == TUNEL:
@@ -184,3 +200,49 @@ func hay_derrumbada_en_tunel() -> bool:
 			if get_celda(x, y) == DERRUMBADA:
 				return true
 	return false
+	
+func _bloquear_entrada(
+	cx: int,
+	cy: int,
+	rx: int,
+	ry: int,
+	x1: int,
+	y1: int,
+	grosor: int
+) -> void:
+	# Límites de la cámara
+	var min_x := cx - rx
+	var max_x := cx + rx
+	var min_y := cy - ry
+	var max_y := cy + ry
+
+	# Misma lógica de _linea()
+	var pasos: int = maxi(absi(x1 - cx), absi(y1 - cy))
+
+	if pasos == 0:
+		return
+
+	for i in pasos + 1:
+		var t: float = float(i) / float(pasos)
+
+		var x: int = roundi(lerpf(cx, x1, t))
+		var y: int = roundi(lerpf(cy, y1, t))
+
+		# ¿Este punto ya está fuera de la cámara?
+		var fuera_de_camara := (
+			x < min_x
+			or x > max_x
+			or y < min_y
+			or y > max_y
+		)
+
+		if fuera_de_camara:
+			# Bloqueamos el primer tramo del túnel
+			for oy in range(-grosor, grosor + 1):
+				for ox in range(-grosor, grosor + 1):
+					if ox * ox + oy * oy <= grosor * grosor + 1:
+						if get_celda(x + ox, y + oy) == TUNEL:
+							_poner(x + ox, y + oy, DERRUMBADA)
+
+			# Solo necesitamos bloquear la entrada
+			return
