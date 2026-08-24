@@ -6,18 +6,27 @@ const VEL_CORRER := 140.0
 const VEL_CARGAR := 48.0
 const VEL_ARRASTRE := 26.0
 
+const TEXTURA := preload("res://assets/mpandiarajan_ants.png")
+const HFRAMES := 12
+const VFRAMES := 8
+const FRAMES_PASO := 3
+const DIR_ABAJO := 0
+const DIR_IZQUIERDA := 1
+const DIR_DERECHA := 2
+const DIR_ARRIBA := 3
+
 signal intento_mover
 signal cerca_de_comida(pieza: Node2D)
 
 var gasta_energia: bool = false
 var bloqueada: bool = false
 var _gasto_acum: float = 0.0
-var _mandibulas: Node2D
-var _cuerpo: Node2D
-var _patas: Array[Node2D] = []
+var _sprite: Sprite2D
 var _comida_vista: Node2D
 var _sensor: Area2D
 var _paso: float = 0.0
+var _dir := DIR_DERECHA
+var _mira := Vector2.RIGHT
 var energia: int = 100
 var energia_maxima: int = 100
 
@@ -31,61 +40,23 @@ func _ready() -> void:
 
 
 func _dibujar() -> void:
-	_cuerpo = Node2D.new()
-	_cuerpo.name = "Cuerpo"
-	add_child(_cuerpo)
-
-	for i in 3:
-		var pata_par := Node2D.new()
-		_cuerpo.add_child(pata_par)
-		_patas.append(pata_par)
-		var y := -9 if i != 1 else 9
-		pata_par.add_child(_segmento(Vector2(-8 + i * 7, y), Vector2(11, 2.2), Paleta.HORMIGA_OSCURA, 0.7 if y < 0 else -0.7))
-		pata_par.add_child(_segmento(Vector2(-8 + i * 7, y), Vector2(8, 1.8), Paleta.OJO, 1.15 if y < 0 else -1.15))
-
-	_cuerpo.add_child(_ovalo(Vector2(-11, 0), Vector2(16, 12), Paleta.HORMIGA_OSCURA))
-	_cuerpo.add_child(_ovalo(Vector2(1, 0), Vector2(13, 10), Paleta.HORMIGA))
-	_cuerpo.add_child(_ovalo(Vector2(13, -1), Vector2(11, 9), Paleta.HORMIGA_PANZA))
-	_cuerpo.add_child(_ovalo(Vector2(16, -3), Vector2(3, 3), Paleta.OJO))
-
-	var ant1 := _segmento(Vector2(18, -5), Vector2(9, 1.4), Paleta.OJO, -0.8)
-	var ant2 := _segmento(Vector2(18, 2), Vector2(8, 1.4), Paleta.OJO, 0.35)
-	_cuerpo.add_child(ant1)
-	_cuerpo.add_child(ant2)
-
-	_mandibulas = Node2D.new()
-	_mandibulas.position = Vector2(18, 1)
-	_cuerpo.add_child(_mandibulas)
-	var m1 := _ovalo(Vector2(5, -3), Vector2(7, 2.4), Paleta.HORMIGA_OSCURA)
-	var m2 := _ovalo(Vector2(5, 3), Vector2(7, 2.4), Paleta.HORMIGA_OSCURA)
-	m1.rotation = -0.3
-	m2.rotation = 0.3
-	_mandibulas.add_child(m1)
-	_mandibulas.add_child(m2)
+	_sprite = Sprite2D.new()
+	_sprite.name = "Cuerpo"
+	_sprite.texture = TEXTURA
+	_sprite.hframes = HFRAMES
+	_sprite.vframes = VFRAMES
+	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_sprite.scale = Vector2(0.72, 0.72)
+	# El recorte deja aire arriba; baja el dibujo al centro de colisión.
+	_sprite.offset = Vector2(0, -20)
+	add_child(_sprite)
+	_poner_frame(1)
 
 	var col := CollisionShape2D.new()
 	var shape := CircleShape2D.new()
 	shape.radius = 9
 	col.shape = shape
 	add_child(col)
-
-
-func _ovalo(pos: Vector2, tam: Vector2, color: Color) -> Polygon2D:
-	var p := Polygon2D.new()
-	p.color = color
-	p.position = pos
-	var pts := PackedVector2Array()
-	for i in 12:
-		var a := TAU * i / 12.0
-		pts.append(Vector2(cos(a) * tam.x * 0.5, sin(a) * tam.y * 0.5))
-	p.polygon = pts
-	return p
-
-
-func _segmento(pos: Vector2, tam: Vector2, color: Color, rot: float) -> Polygon2D:
-	var p := _ovalo(pos, tam, color)
-	p.rotation = rot
-	return p
 
 
 func _armar_sensor() -> void:
@@ -131,8 +102,8 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 	if dir.length() > 0.15:
-		rotation = dir.angle()
-		_paso += delta * 14.0
+		_orientar(dir)
+		_paso += delta * (18.0 if quiere_correr else 12.0)
 		_gasto_acum += delta
 		var ritmo := 0.34 if quiere_correr else 0.52
 		if en_curso and _gasto_acum >= ritmo:
@@ -140,18 +111,33 @@ func _physics_process(delta: float) -> void:
 			intento_mover.emit()
 			if gasta_energia:
 				Juego.partida.correr()
-	for i in _patas.size():
-		_patas[i].rotation = sin(_paso + i) * 0.25 if dir.length() > 0.15 else 0.0
+		_poner_frame(int(_paso) % FRAMES_PASO)
+	else:
+		_poner_frame(1)
 
-	_mandibulas.rotation = 0.35 if (Juego.partida and Juego.partida.lleva_comida) or _comida_vista else 0.0
 	if Juego.partida:
 		var cansancio := 1.0 - (Juego.partida.energia / 100.0)
 		modulate = Color(0.55, 0.45, 0.4) if Juego.partida.arrastrandose else Color(1, 1.0 - cansancio * 0.2, 1.0 - cansancio * 0.3)
 
 	if _comida_vista and is_instance_valid(_comida_vista):
-		_comida_vista.global_position = global_position + Vector2.RIGHT.rotated(rotation) * 16.0
+		_comida_vista.global_position = global_position + _mira * 16.0
 
 	_revisar_comida_solapada()
+
+
+func _orientar(dir: Vector2) -> void:
+	if abs(dir.x) >= abs(dir.y):
+		_dir = DIR_DERECHA if dir.x > 0.0 else DIR_IZQUIERDA
+		_mira = Vector2.RIGHT if dir.x > 0.0 else Vector2.LEFT
+	else:
+		_dir = DIR_ABAJO if dir.y > 0.0 else DIR_ARRIBA
+		_mira = Vector2.DOWN if dir.y > 0.0 else Vector2.UP
+
+
+func _poner_frame(paso: int) -> void:
+	if _sprite == null:
+		return
+	_sprite.frame = _dir * HFRAMES + clampi(paso, 0, FRAMES_PASO - 1)
 
 
 func _revisar_comida_solapada() -> void:
