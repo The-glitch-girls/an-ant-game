@@ -17,7 +17,7 @@ var _final_mostrado: bool = false
 var _mini_mapa: MiniMapa
 var _capas_hielo: Array[ColorRect] = []
 var _tiles: TileMapLayer
-var _hud: Hud
+var _hud: Control
 var _camara: Camera2D
 var _intro: bool = true
 var energia_maxima := 100.0
@@ -245,7 +245,7 @@ func _construir_clima() -> void:
 func _construir_ui() -> void:
 	var capa := CanvasLayer.new()
 	add_child(capa)
-	_hud = Hud.new()
+	_hud = preload("res://src/ui/barra_estado.gd").new()
 	_hud.visible = false
 	capa.add_child(_hud)
 
