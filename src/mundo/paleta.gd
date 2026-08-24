@@ -23,4 +23,3 @@ const TERRACOTA := Color(0.86, 0.52, 0.42)
 const TRAZO := Color(0.22, 0.16, 0.12)
 const CORAZON := Color(0.72, 0.32, 0.26)
 const CORAZON_VACIO := Color(0.38, 0.32, 0.28)
-
