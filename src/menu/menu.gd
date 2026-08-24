@@ -8,9 +8,12 @@ const MARRON := Color(0.25, 0.16, 0.10)
 
 const FUENTE_COINY = preload("res://fonts/Coiny-Regular.ttf")
 
+var hormiga: Sprite2D
+var frame_hormiga := 12
+
 func _ready() -> void:
 	_armar()
-	_crear_hormigas()
+	_crear_hormiga()
 
 func _armar() -> void:
 	# --------------------------------------------------
@@ -192,3 +195,32 @@ func _crear_hormigas() -> void:
 		Vector2(-60, 120),
 		0.0
 	)
+	
+func _crear_hormiga() -> void:
+	hormiga = Sprite2D.new()
+	hormiga.texture = preload("res://assets/mpandiarajan_ants.png")
+	# El sprite sheet tiene 12 columnas y 8 filas
+	hormiga.hframes = 12
+	hormiga.vframes = 8
+	# Primera hormiga
+	hormiga.frame = 12
+	# Tamaño visual
+	hormiga.scale = Vector2(1.2, 1.2)
+	hormiga.position = Vector2(60, 660)
+	add_child(hormiga)
+	
+	var timer := Timer.new()
+	timer.wait_time = 0.12
+	timer.autostart = true
+
+	add_child(timer)
+	
+	timer.timeout.connect(_animar_hormiga)
+
+func _animar_hormiga() -> void:
+	frame_hormiga += 1
+
+	if frame_hormiga > 14:
+		frame_hormiga = 12
+
+	hormiga.frame = frame_hormiga
