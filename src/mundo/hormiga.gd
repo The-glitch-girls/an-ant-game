@@ -10,6 +10,7 @@ signal intento_mover
 signal cerca_de_comida(pieza: Node2D)
 
 var gasta_energia: bool = false
+var bloqueada: bool = false
 var _gasto_acum: float = 0.0
 var _mandibulas: Node2D
 var _cuerpo: Node2D
@@ -117,7 +118,7 @@ func _physics_process(delta: float) -> void:
 
 	var vel := VEL_CAMINAR
 	var quiere_correr := Input.is_action_pressed("correr") and dir != Vector2.ZERO
-	if not en_curso:
+	if not en_curso or bloqueada:
 		dir = Vector2.ZERO
 	elif Juego.partida.arrastrandose:
 		vel = VEL_ARRASTRE

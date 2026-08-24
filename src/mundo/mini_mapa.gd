@@ -48,17 +48,17 @@ func _color_celda(celda: int) -> Color:
 		HormigueroMapa.DERRUMBADA:
 			return Paleta.TIERRA_MANCHA
 		HormigueroMapa.CIELO:
-			return Color(0.78, 0.80, 0.76, 0.55)
+			return Color(0.98, 0.88, 0.72, 0.5)
 		_:
 			return Paleta.TIERRA_OSCURA
 
 
 func _draw() -> void:
 	var marco := Rect2(Vector2.ZERO, custom_minimum_size)
-	draw_rect(marco, Color(0.16, 0.09, 0.05, 0.78))
+	draw_rect(marco, Paleta.CREMA)
 	if _nido:
 		draw_texture(_nido, Vector2(MARGEN, MARGEN))
-	draw_rect(marco, Color(0.38, 0.22, 0.12, 0.9), false, 1.5)
+	draw_polyline(UiCozzy._ronda(marco, 12, 4), Paleta.TRAZO, 2.0, true)
 	if _mapa == null:
 		return
 	var p := mundo_a_local(_hormiga_mundo)

@@ -1,9 +1,5 @@
 extends Control
 
-const TIERRA := Color(0.725, 0.478, 0.275)
-const AMBAR := Color(0.83, 0.58, 0.22)
-const HUESO := Color(0.93, 0.86, 0.72)
-
 
 func _ready() -> void:
 	_armar()
@@ -11,41 +7,39 @@ func _ready() -> void:
 
 func _armar() -> void:
 	var fondo := ColorRect.new()
-	fondo.color = TIERRA
+	fondo.color = Paleta.TIERRA
 	fondo.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(fondo)
 
-	var frio := ColorRect.new()
-	frio.color = Color(0.78, 0.55, 0.32, 0.18)
-	frio.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(frio)
+	var lavado := ColorRect.new()
+	lavado.color = Color(1.0, 0.84, 0.56, 0.18)
+	lavado.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(lavado)
+
+	var tarjeta := UiCozzy.tarjeta()
+	tarjeta.set_anchors_preset(Control.PRESET_CENTER)
+	tarjeta.offset_left = -230
+	tarjeta.offset_right = 230
+	tarjeta.offset_top = -210
+	tarjeta.offset_bottom = 230
+	add_child(tarjeta)
 
 	var caja := VBoxContainer.new()
-	caja.set_anchors_preset(Control.PRESET_CENTER)
-	caja.offset_left = -220
-	caja.offset_right = 220
-	caja.offset_top = -180
-	caja.offset_bottom = 220
-	caja.add_theme_constant_override("separation", 16)
-	add_child(caja)
+	caja.add_theme_constant_override("separation", 14)
+	tarjeta.add_child(caja)
 
 	var titulo := Label.new()
 	titulo.text = "COLONIA"
 	titulo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	titulo.add_theme_color_override("font_color", HUESO)
-	titulo.add_theme_font_size_override("font_size", 64)
+	UiCozzy.estilar_texto(titulo, 42)
 	caja.add_child(titulo)
 
-	var linea := ColorRect.new()
-	linea.color = AMBAR
-	linea.custom_minimum_size = Vector2(0, 2)
-	caja.add_child(linea)
+	caja.add_child(UiCozzy.pastilla("El Hormiguero"))
 
 	var sub := Label.new()
 	sub.text = "La Reina ha desaparecido.\nEl Hormiguero está fragmentado.\nEl Invierno se acerca."
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	sub.add_theme_color_override("font_color", Color(0.7, 0.6, 0.5))
-	sub.add_theme_font_size_override("font_size", 16)
+	UiCozzy.estilar_texto(sub, 16, Paleta.TIERRA_OSCURA)
 	caja.add_child(sub)
 
 	caja.add_child(_boton("Jugar", _on_jugar))
@@ -56,10 +50,7 @@ func _armar() -> void:
 func _boton(texto: String, cb: Callable) -> Button:
 	var b := Button.new()
 	b.text = texto
-	b.custom_minimum_size = Vector2(0, 44)
-	b.add_theme_color_override("font_color", HUESO)
-	b.add_theme_color_override("font_hover_color", AMBAR)
-	b.add_theme_font_size_override("font_size", 22)
+	UiCozzy.estilar_boton(b)
 	b.pressed.connect(cb)
 	return b
 
