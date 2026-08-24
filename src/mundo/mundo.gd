@@ -47,7 +47,7 @@ func _ready() -> void:
 	_construir_larvas()
 	_construir_clima()
 	_construir_ui()
-	_bajar_al_nido()
+	_mostrar_onboarding()
 
 
 func _pintar_cielo() -> void:
@@ -321,6 +321,12 @@ func _construir_ui() -> void:
 	_mini_mapa.marcar(_hormiga.position)
 	_mini_mapa.visible = false
 	capa.add_child(_mini_mapa)
+
+
+func _mostrar_onboarding() -> void:
+	var intro := Onboarding.new()
+	add_child(intro)
+	intro.termino.connect(_bajar_al_nido)
 
 
 func _bajar_al_nido() -> void:
